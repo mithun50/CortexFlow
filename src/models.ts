@@ -5,31 +5,31 @@
  * Supports project metadata, task lists, agent notes, and progress tracking.
  */
 
-import { randomUUID } from "crypto";
+import { randomUUID } from 'crypto';
 
 // ============================================================================
 // Enums
 // ============================================================================
 
 export enum Phase {
-  PLANNING = "planning",
-  EXECUTION = "execution",
-  REVIEW = "review",
-  COMPLETED = "completed",
+  PLANNING = 'planning',
+  EXECUTION = 'execution',
+  REVIEW = 'review',
+  COMPLETED = 'completed',
 }
 
 export enum TaskStatus {
-  PENDING = "pending",
-  IN_PROGRESS = "in_progress",
-  BLOCKED = "blocked",
-  COMPLETED = "completed",
-  CANCELLED = "cancelled",
+  PENDING = 'pending',
+  IN_PROGRESS = 'in_progress',
+  BLOCKED = 'blocked',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
 }
 
 export enum AgentRole {
-  PLANNER = "planner", // ChatGPT - ideation, design
-  EXECUTOR = "executor", // Claude - implementation
-  REVIEWER = "reviewer", // Either AI - validation
+  PLANNER = 'planner', // ChatGPT - ideation, design
+  EXECUTOR = 'executor', // Claude - implementation
+  REVIEWER = 'reviewer', // Either AI - validation
 }
 
 // ============================================================================
@@ -55,7 +55,7 @@ export interface AgentNote {
   agent: AgentRole;
   content: string;
   timestamp: string;
-  category: "general" | "decision" | "blocker" | "insight";
+  category: 'general' | 'decision' | 'blocker' | 'insight';
 }
 
 export interface ProjectContext {
@@ -96,7 +96,7 @@ function timestamp(): string {
 export function createTask(
   title: string,
   description: string,
-  options: Partial<Omit<Task, "id" | "title" | "description" | "createdAt" | "updatedAt">> = {}
+  options: Partial<Omit<Task, 'id' | 'title' | 'description' | 'createdAt' | 'updatedAt'>> = {}
 ): Task {
   const now = timestamp();
   return {
@@ -117,7 +117,7 @@ export function createTask(
 export function createNote(
   agent: AgentRole,
   content: string,
-  category: AgentNote["category"] = "general"
+  category: AgentNote['category'] = 'general'
 ): AgentNote {
   return {
     id: generateId(),
@@ -131,7 +131,9 @@ export function createNote(
 export function createProject(
   name: string,
   description: string,
-  options: Partial<Omit<ProjectContext, "id" | "name" | "description" | "createdAt" | "updatedAt">> = {}
+  options: Partial<
+    Omit<ProjectContext, 'id' | 'name' | 'description' | 'createdAt' | 'updatedAt'>
+  > = {}
 ): ProjectContext {
   const now = timestamp();
   return {
@@ -165,7 +167,7 @@ export function addTask(
   context: ProjectContext,
   title: string,
   description: string,
-  options: Partial<Omit<Task, "id" | "title" | "description" | "createdAt" | "updatedAt">> = {}
+  options: Partial<Omit<Task, 'id' | 'title' | 'description' | 'createdAt' | 'updatedAt'>> = {}
 ): { context: ProjectContext; task: Task } {
   const task = createTask(title, description, options);
   const updated = bumpVersion({
@@ -179,7 +181,7 @@ export function addNote(
   context: ProjectContext,
   agent: AgentRole,
   content: string,
-  category: AgentNote["category"] = "general"
+  category: AgentNote['category'] = 'general'
 ): { context: ProjectContext; note: AgentNote } {
   const note = createNote(agent, content, category);
   const updated = bumpVersion({

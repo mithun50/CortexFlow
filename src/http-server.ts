@@ -10,8 +10,8 @@
  * - Any HTTP-capable client
  */
 
-import { createServer as createHttpServer, IncomingMessage, ServerResponse } from "http";
-import { getStorage } from "./storage.js";
+import { createServer as createHttpServer, IncomingMessage, ServerResponse } from 'http';
+import { getStorage } from './storage.js';
 import {
   Phase,
   TaskStatus,
@@ -25,9 +25,9 @@ import {
   getTask,
   getPendingTasks,
   getProjectSummary,
-} from "./models.js";
+} from './models.js';
 
-const PORT = parseInt(process.env.CORTEXFLOW_PORT ?? "3210", 10);
+const PORT = parseInt(process.env.CORTEXFLOW_PORT ?? '3210', 10);
 
 // ============================================================================
 // HTTP Utilities
@@ -35,19 +35,19 @@ const PORT = parseInt(process.env.CORTEXFLOW_PORT ?? "3210", 10);
 
 async function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
-    let body = "";
-    req.on("data", (chunk) => (body += chunk));
-    req.on("end", () => resolve(body));
-    req.on("error", reject);
+    let body = '';
+    req.on('data', (chunk) => (body += chunk));
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
   });
 }
 
 function json(res: ServerResponse, data: unknown, status = 200): void {
   res.writeHead(status, {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
   });
   res.end(JSON.stringify(data, null, 2));
 }
@@ -62,11 +62,11 @@ function error(res: ServerResponse, message: string, status = 400): void {
 
 async function handleProjects(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const storage = await getStorage();
-  const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
-  const pathParts = url.pathname.split("/").filter(Boolean);
+  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+  const pathParts = url.pathname.split('/').filter(Boolean);
 
   // GET /api/projects - List all projects
-  if (req.method === "GET" && pathParts.length === 2) {
+  if (req.method === 'GET' && pathParts.length === 2) {
     const projects = await storage.listProjects();
     const activeId = await storage.getActiveProjectId();
     json(res, {
@@ -80,12 +80,12 @@ async function handleProjects(req: IncomingMessage, res: ServerResponse): Promis
   }
 
   // POST /api/projects - Create new project
-  if (req.method === "POST" && pathParts.length === 2) {
+  if (req.method === 'POST' && pathParts.length === 2) {
     const body = JSON.parse(await readBody(req));
     const { name, description, phase, tasks, tags } = body;
 
     if (!name || !description) {
-      error(res, "name and description are required");
+      error(res, 'name and description are required');
       return;
     }
 
@@ -111,11 +111,11 @@ async function handleProjects(req: IncomingMessage, res: ServerResponse): Promis
   }
 
   // GET /api/projects/:id - Get specific project
-  if (req.method === "GET" && pathParts.length === 3) {
+  if (req.method === 'GET' && pathParts.length === 3) {
     const projectId = pathParts[2];
     const project = await storage.loadProject(projectId);
     if (!project) {
-      error(res, "Project not found", 404);
+      error(res, 'Project not found', 404);
       return;
     }
     json(res, project);
@@ -123,28 +123,28 @@ async function handleProjects(req: IncomingMessage, res: ServerResponse): Promis
   }
 
   // DELETE /api/projects/:id - Delete project
-  if (req.method === "DELETE" && pathParts.length === 3) {
+  if (req.method === 'DELETE' && pathParts.length === 3) {
     const projectId = pathParts[2];
     const deleted = await storage.deleteProject(projectId);
     if (!deleted) {
-      error(res, "Project not found", 404);
+      error(res, 'Project not found', 404);
       return;
     }
     json(res, { deleted: true });
     return;
   }
 
-  error(res, "Not found", 404);
+  error(res, 'Not found', 404);
 }
 
 async function handleContext(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const storage = await getStorage();
 
   // GET /api/context - Read active project context
-  if (req.method === "GET") {
+  if (req.method === 'GET') {
     const context = await storage.getActiveProject();
     if (!context) {
-      error(res, "No active project", 404);
+      error(res, 'No active project', 404);
       return;
     }
     json(res, {
@@ -156,10 +156,10 @@ async function handleContext(req: IncomingMessage, res: ServerResponse): Promise
   }
 
   // PUT /api/context - Update active project context
-  if (req.method === "PUT") {
+  if (req.method === 'PUT') {
     let context = await storage.getActiveProject();
     if (!context) {
-      error(res, "No active project", 404);
+      error(res, 'No active project', 404);
       return;
     }
 
@@ -180,35 +180,35 @@ async function handleContext(req: IncomingMessage, res: ServerResponse): Promise
     return;
   }
 
-  error(res, "Method not allowed", 405);
+  error(res, 'Method not allowed', 405);
 }
 
 async function handleTasks(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const storage = await getStorage();
-  const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
-  const pathParts = url.pathname.split("/").filter(Boolean);
+  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+  const pathParts = url.pathname.split('/').filter(Boolean);
 
   let context = await storage.getActiveProject();
   if (!context) {
-    error(res, "No active project", 404);
+    error(res, 'No active project', 404);
     return;
   }
 
   // GET /api/tasks - List tasks
-  if (req.method === "GET" && pathParts.length === 2) {
-    const includeDone = url.searchParams.get("include_completed") === "true";
+  if (req.method === 'GET' && pathParts.length === 2) {
+    const includeDone = url.searchParams.get('include_completed') === 'true';
     const tasks = includeDone ? context.tasks : getPendingTasks(context);
     json(res, { tasks });
     return;
   }
 
   // POST /api/tasks - Add task
-  if (req.method === "POST" && pathParts.length === 2) {
+  if (req.method === 'POST' && pathParts.length === 2) {
     const body = JSON.parse(await readBody(req));
     const { title, description, priority, dependencies } = body;
 
     if (!title || !description) {
-      error(res, "title and description are required");
+      error(res, 'title and description are required');
       return;
     }
 
@@ -224,11 +224,11 @@ async function handleTasks(req: IncomingMessage, res: ServerResponse): Promise<v
   }
 
   // GET /api/tasks/:id - Get task
-  if (req.method === "GET" && pathParts.length === 3) {
+  if (req.method === 'GET' && pathParts.length === 3) {
     const taskId = pathParts[2];
     const task = getTask(context, taskId);
     if (!task) {
-      error(res, "Task not found", 404);
+      error(res, 'Task not found', 404);
       return;
     }
     json(res, task);
@@ -236,11 +236,11 @@ async function handleTasks(req: IncomingMessage, res: ServerResponse): Promise<v
   }
 
   // PUT /api/tasks/:id - Update task
-  if (req.method === "PUT" && pathParts.length === 3) {
+  if (req.method === 'PUT' && pathParts.length === 3) {
     const taskId = pathParts[2];
     const task = getTask(context, taskId);
     if (!task) {
-      error(res, "Task not found", 404);
+      error(res, 'Task not found', 404);
       return;
     }
 
@@ -259,11 +259,11 @@ async function handleTasks(req: IncomingMessage, res: ServerResponse): Promise<v
   }
 
   // POST /api/tasks/:id/complete - Mark task complete
-  if (req.method === "POST" && pathParts.length === 4 && pathParts[3] === "complete") {
+  if (req.method === 'POST' && pathParts.length === 4 && pathParts[3] === 'complete') {
     const taskId = pathParts[2];
     const task = getTask(context, taskId);
     if (!task) {
-      error(res, "Task not found", 404);
+      error(res, 'Task not found', 404);
       return;
     }
 
@@ -281,34 +281,34 @@ async function handleTasks(req: IncomingMessage, res: ServerResponse): Promise<v
     return;
   }
 
-  error(res, "Not found", 404);
+  error(res, 'Not found', 404);
 }
 
 async function handleNotes(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const storage = await getStorage();
-  const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
-  const pathParts = url.pathname.split("/").filter(Boolean);
+  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+  const pathParts = url.pathname.split('/').filter(Boolean);
 
   const context = await storage.getActiveProject();
   if (!context) {
-    error(res, "No active project", 404);
+    error(res, 'No active project', 404);
     return;
   }
 
   // GET /api/notes - List notes
-  if (req.method === "GET" && pathParts.length === 2) {
-    const limit = parseInt(url.searchParams.get("limit") ?? "20", 10);
+  if (req.method === 'GET' && pathParts.length === 2) {
+    const limit = parseInt(url.searchParams.get('limit') ?? '20', 10);
     json(res, { notes: context.notes.slice(-limit) });
     return;
   }
 
   // POST /api/notes - Add note
-  if (req.method === "POST" && pathParts.length === 2) {
+  if (req.method === 'POST' && pathParts.length === 2) {
     const body = JSON.parse(await readBody(req));
     const { content, agent, category } = body;
 
     if (!content) {
-      error(res, "content is required");
+      error(res, 'content is required');
       return;
     }
 
@@ -316,7 +316,7 @@ async function handleNotes(req: IncomingMessage, res: ServerResponse): Promise<v
       context,
       (agent as AgentRole) ?? AgentRole.EXECUTOR,
       content,
-      category ?? "general"
+      category ?? 'general'
     );
 
     await storage.saveProject(result.context);
@@ -324,25 +324,25 @@ async function handleNotes(req: IncomingMessage, res: ServerResponse): Promise<v
     return;
   }
 
-  error(res, "Not found", 404);
+  error(res, 'Not found', 404);
 }
 
 async function handleActive(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const storage = await getStorage();
 
   // POST /api/active - Set active project
-  if (req.method === "POST") {
+  if (req.method === 'POST') {
     const body = JSON.parse(await readBody(req));
     const { project_id } = body;
 
     if (!project_id) {
-      error(res, "project_id is required");
+      error(res, 'project_id is required');
       return;
     }
 
     const project = await storage.loadProject(project_id);
     if (!project) {
-      error(res, "Project not found", 404);
+      error(res, 'Project not found', 404);
       return;
     }
 
@@ -351,7 +351,7 @@ async function handleActive(req: IncomingMessage, res: ServerResponse): Promise<
     return;
   }
 
-  error(res, "Method not allowed", 405);
+  error(res, 'Method not allowed', 405);
 }
 
 // ============================================================================
@@ -360,155 +360,155 @@ async function handleActive(req: IncomingMessage, res: ServerResponse): Promise<
 
 function getOpenAPISpec(): object {
   return {
-    openapi: "3.1.0",
+    openapi: '3.1.0',
     info: {
-      title: "CortexFlow API",
-      description: "AI-to-AI task continuation and project context sharing",
-      version: "1.0.0",
+      title: 'CortexFlow API',
+      description: 'AI-to-AI task continuation and project context sharing',
+      version: '1.0.0',
     },
     servers: [{ url: `http://localhost:${PORT}` }],
     paths: {
-      "/api/context": {
+      '/api/context': {
         get: {
-          operationId: "readContext",
-          summary: "Read active project context",
-          responses: { "200": { description: "Project context" } },
+          operationId: 'readContext',
+          summary: 'Read active project context',
+          responses: { '200': { description: 'Project context' } },
         },
         put: {
-          operationId: "updateContext",
-          summary: "Update project phase or metadata",
+          operationId: 'updateContext',
+          summary: 'Update project phase or metadata',
           requestBody: {
-            content: { "application/json": { schema: { type: "object" } } },
+            content: { 'application/json': { schema: { type: 'object' } } },
           },
-          responses: { "200": { description: "Updated context" } },
+          responses: { '200': { description: 'Updated context' } },
         },
       },
-      "/api/projects": {
+      '/api/projects': {
         get: {
-          operationId: "listProjects",
-          summary: "List all projects",
-          responses: { "200": { description: "Project list" } },
+          operationId: 'listProjects',
+          summary: 'List all projects',
+          responses: { '200': { description: 'Project list' } },
         },
         post: {
-          operationId: "createProject",
-          summary: "Create new project",
+          operationId: 'createProject',
+          summary: 'Create new project',
           requestBody: {
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["name", "description"],
+                  type: 'object',
+                  required: ['name', 'description'],
                   properties: {
-                    name: { type: "string" },
-                    description: { type: "string" },
-                    phase: { type: "string" },
-                    tasks: { type: "array" },
+                    name: { type: 'string' },
+                    description: { type: 'string' },
+                    phase: { type: 'string' },
+                    tasks: { type: 'array' },
                   },
                 },
               },
             },
           },
-          responses: { "201": { description: "Created project" } },
+          responses: { '201': { description: 'Created project' } },
         },
       },
-      "/api/tasks": {
+      '/api/tasks': {
         get: {
-          operationId: "listTasks",
-          summary: "List tasks",
-          responses: { "200": { description: "Task list" } },
+          operationId: 'listTasks',
+          summary: 'List tasks',
+          responses: { '200': { description: 'Task list' } },
         },
         post: {
-          operationId: "addTask",
-          summary: "Add new task",
+          operationId: 'addTask',
+          summary: 'Add new task',
           requestBody: {
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["title", "description"],
+                  type: 'object',
+                  required: ['title', 'description'],
                   properties: {
-                    title: { type: "string" },
-                    description: { type: "string" },
+                    title: { type: 'string' },
+                    description: { type: 'string' },
                   },
                 },
               },
             },
           },
-          responses: { "201": { description: "Created task" } },
+          responses: { '201': { description: 'Created task' } },
         },
       },
-      "/api/tasks/{taskId}": {
+      '/api/tasks/{taskId}': {
         put: {
-          operationId: "updateTask",
-          summary: "Update task status",
-          parameters: [{ name: "taskId", in: "path", required: true }],
+          operationId: 'updateTask',
+          summary: 'Update task status',
+          parameters: [{ name: 'taskId', in: 'path', required: true }],
           requestBody: {
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
+                  type: 'object',
                   properties: {
-                    status: { type: "string" },
-                    note: { type: "string" },
+                    status: { type: 'string' },
+                    note: { type: 'string' },
                   },
                 },
               },
             },
           },
-          responses: { "200": { description: "Updated task" } },
+          responses: { '200': { description: 'Updated task' } },
         },
       },
-      "/api/tasks/{taskId}/complete": {
+      '/api/tasks/{taskId}/complete': {
         post: {
-          operationId: "completeTask",
-          summary: "Mark task complete",
-          parameters: [{ name: "taskId", in: "path", required: true }],
-          responses: { "200": { description: "Completed task" } },
+          operationId: 'completeTask',
+          summary: 'Mark task complete',
+          parameters: [{ name: 'taskId', in: 'path', required: true }],
+          responses: { '200': { description: 'Completed task' } },
         },
       },
-      "/api/notes": {
+      '/api/notes': {
         get: {
-          operationId: "listNotes",
-          summary: "List project notes",
-          responses: { "200": { description: "Note list" } },
+          operationId: 'listNotes',
+          summary: 'List project notes',
+          responses: { '200': { description: 'Note list' } },
         },
         post: {
-          operationId: "addNote",
-          summary: "Add note",
+          operationId: 'addNote',
+          summary: 'Add note',
           requestBody: {
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["content"],
+                  type: 'object',
+                  required: ['content'],
                   properties: {
-                    content: { type: "string" },
-                    agent: { type: "string" },
-                    category: { type: "string" },
+                    content: { type: 'string' },
+                    agent: { type: 'string' },
+                    category: { type: 'string' },
                   },
                 },
               },
             },
           },
-          responses: { "201": { description: "Created note" } },
+          responses: { '201': { description: 'Created note' } },
         },
       },
-      "/api/active": {
+      '/api/active': {
         post: {
-          operationId: "setActiveProject",
-          summary: "Set active project",
+          operationId: 'setActiveProject',
+          summary: 'Set active project',
           requestBody: {
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["project_id"],
-                  properties: { project_id: { type: "string" } },
+                  type: 'object',
+                  required: ['project_id'],
+                  properties: { project_id: { type: 'string' } },
                 },
               },
             },
           },
-          responses: { "200": { description: "Active project set" } },
+          responses: { '200': { description: 'Active project set' } },
         },
       },
     },
@@ -520,49 +520,49 @@ function getOpenAPISpec(): object {
 // ============================================================================
 
 async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
+  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
 
   // CORS preflight
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     res.writeHead(204, {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
     });
     res.end();
     return;
   }
 
   // Health check
-  if (url.pathname === "/" || url.pathname === "/health") {
-    json(res, { status: "ok", service: "cortexflow", version: "1.0.0" });
+  if (url.pathname === '/' || url.pathname === '/health') {
+    json(res, { status: 'ok', service: 'cortexflow', version: '1.0.0' });
     return;
   }
 
   // OpenAPI spec
-  if (url.pathname === "/openapi.json") {
+  if (url.pathname === '/openapi.json') {
     json(res, getOpenAPISpec());
     return;
   }
 
   // API routes
   try {
-    if (url.pathname.startsWith("/api/projects")) {
+    if (url.pathname.startsWith('/api/projects')) {
       await handleProjects(req, res);
-    } else if (url.pathname.startsWith("/api/context")) {
+    } else if (url.pathname.startsWith('/api/context')) {
       await handleContext(req, res);
-    } else if (url.pathname.startsWith("/api/tasks")) {
+    } else if (url.pathname.startsWith('/api/tasks')) {
       await handleTasks(req, res);
-    } else if (url.pathname.startsWith("/api/notes")) {
+    } else if (url.pathname.startsWith('/api/notes')) {
       await handleNotes(req, res);
-    } else if (url.pathname.startsWith("/api/active")) {
+    } else if (url.pathname.startsWith('/api/active')) {
       await handleActive(req, res);
     } else {
-      error(res, "Not found", 404);
+      error(res, 'Not found', 404);
     }
   } catch (err) {
-    console.error("Request error:", err);
-    error(res, err instanceof Error ? err.message : "Internal error", 500);
+    console.error('Request error:', err);
+    error(res, err instanceof Error ? err.message : 'Internal error', 500);
   }
 }
 
@@ -576,14 +576,14 @@ export function runHttpServer(): void {
   server.listen(PORT, () => {
     console.log(`CortexFlow HTTP API running at http://localhost:${PORT}`);
     console.log(`OpenAPI spec: http://localhost:${PORT}/openapi.json`);
-    console.log("");
-    console.log("Endpoints:");
-    console.log("  GET  /api/context          - Read active project");
-    console.log("  POST /api/projects         - Create project");
-    console.log("  GET  /api/tasks            - List tasks");
-    console.log("  POST /api/tasks            - Add task");
-    console.log("  PUT  /api/tasks/:id        - Update task");
-    console.log("  POST /api/tasks/:id/complete - Complete task");
-    console.log("  POST /api/notes            - Add note");
+    console.log('');
+    console.log('Endpoints:');
+    console.log('  GET  /api/context          - Read active project');
+    console.log('  POST /api/projects         - Create project');
+    console.log('  GET  /api/tasks            - List tasks');
+    console.log('  POST /api/tasks            - Add task');
+    console.log('  PUT  /api/tasks/:id        - Update task');
+    console.log('  POST /api/tasks/:id/complete - Complete task');
+    console.log('  POST /api/notes            - Add note');
   });
 }
