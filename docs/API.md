@@ -115,3 +115,4 @@ Delete a project.
 | GET | `/api/notes` | List notes |
 | POST | `/api/notes` | Add note |
 | POST | `/api/active` | Set active project |
+
