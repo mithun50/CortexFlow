@@ -4,14 +4,14 @@
  * Provides JSON file-based storage for project contexts.
  * Supports multi-project management and atomic file operations.
  */
-import { readFile, writeFile, mkdir, readdir, unlink, access } from "fs/promises";
-import { join, dirname } from "path";
-import { homedir } from "os";
-import { serializeContext, deserializeContext, } from "./models.js";
+import { readFile, writeFile, mkdir, readdir, unlink, access } from 'fs/promises';
+import { join, dirname } from 'path';
+import { homedir } from 'os';
+import { serializeContext, deserializeContext } from './models.js';
 // ============================================================================
 // Configuration
 // ============================================================================
-const DATA_DIR = process.env.CORTEXFLOW_DATA_DIR ?? join(homedir(), ".cortexflow", "data");
+const DATA_DIR = process.env.CORTEXFLOW_DATA_DIR ?? join(homedir(), '.cortexflow', 'data');
 // ============================================================================
 // File System Utilities
 // ============================================================================
@@ -37,16 +37,16 @@ function getProjectPath(projectId) {
 }
 export async function createStorage() {
     await ensureDir(DATA_DIR);
-    const activeProjectPath = join(DATA_DIR, ".active");
+    const activeProjectPath = join(DATA_DIR, '.active');
     async function saveProject(context) {
         const path = getProjectPath(context.id);
         await ensureDir(dirname(path));
-        await writeFile(path, serializeContext(context), "utf-8");
+        await writeFile(path, serializeContext(context), 'utf-8');
     }
     async function loadProject(projectId) {
         const path = getProjectPath(projectId);
         try {
-            const data = await readFile(path, "utf-8");
+            const data = await readFile(path, 'utf-8');
             return deserializeContext(data);
         }
         catch {
@@ -73,8 +73,8 @@ export async function createStorage() {
             const files = await readdir(DATA_DIR);
             const projects = [];
             for (const file of files) {
-                if (file.endsWith(".json") && !file.startsWith(".")) {
-                    const projectId = file.replace(".json", "");
+                if (file.endsWith('.json') && !file.startsWith('.')) {
+                    const projectId = file.replace('.json', '');
                     const project = await loadProject(projectId);
                     if (project) {
                         projects.push(project);
@@ -88,11 +88,11 @@ export async function createStorage() {
         }
     }
     async function setActiveProject(projectId) {
-        await writeFile(activeProjectPath, projectId, "utf-8");
+        await writeFile(activeProjectPath, projectId, 'utf-8');
     }
     async function getActiveProjectId() {
         try {
-            const id = await readFile(activeProjectPath, "utf-8");
+            const id = await readFile(activeProjectPath, 'utf-8');
             return id.trim() || null;
         }
         catch {

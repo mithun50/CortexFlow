@@ -18,25 +18,25 @@
  *   cortexflow --http    # HTTP API server
  *   cortexflow --both    # Both servers
  */
-import { runServer } from "./server.js";
-import { runHttpServer } from "./http-server.js";
+import { runServer } from './server.js';
+import { runHttpServer } from './http-server.js';
 const args = process.argv.slice(2);
 const mode = args[0];
 async function main() {
     switch (mode) {
-        case "--http":
-        case "http":
-            console.error("Starting CortexFlow HTTP API server...");
+        case '--http':
+        case 'http':
+            console.error('Starting CortexFlow HTTP API server...');
             runHttpServer();
             break;
-        case "--both":
-        case "both":
-            console.error("Starting CortexFlow (MCP + HTTP)...");
+        case '--both':
+        case 'both':
+            console.error('Starting CortexFlow (MCP + HTTP)...');
             runHttpServer();
             await runServer();
             break;
-        case "--help":
-        case "-h":
+        case '--help':
+        case '-h':
             console.log(`
 CortexFlow - MCP Server for AI-to-AI Task Continuation
 
@@ -68,7 +68,7 @@ MCP Tools:
     }
 }
 main().catch((err) => {
-    console.error("Failed to start CortexFlow:", err);
+    console.error('Failed to start CortexFlow:', err);
     process.exit(1);
 });
 //# sourceMappingURL=index.js.map

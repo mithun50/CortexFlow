@@ -4,7 +4,7 @@
  * Defines the shared context structure for AI-to-AI task continuation.
  * Supports project metadata, task lists, agent notes, and progress tracking.
  */
-import { randomUUID } from "crypto";
+import { randomUUID } from 'crypto';
 // ============================================================================
 // Enums
 // ============================================================================
@@ -54,7 +54,7 @@ export function createTask(title, description, options = {}) {
         dependencies: options.dependencies ?? [],
     };
 }
-export function createNote(agent, content, category = "general") {
+export function createNote(agent, content, category = 'general') {
     return {
         id: generateId(),
         agent,
@@ -97,7 +97,7 @@ export function addTask(context, title, description, options = {}) {
     });
     return { context: updated, task };
 }
-export function addNote(context, agent, content, category = "general") {
+export function addNote(context, agent, content, category = 'general') {
     const note = createNote(agent, content, category);
     const updated = bumpVersion({
         ...context,

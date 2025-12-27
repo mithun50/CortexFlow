@@ -40,7 +40,7 @@ export interface AgentNote {
     agent: AgentRole;
     content: string;
     timestamp: string;
-    category: "general" | "decision" | "blocker" | "insight";
+    category: 'general' | 'decision' | 'blocker' | 'insight';
 }
 export interface ProjectContext {
     id: string;
@@ -55,15 +55,15 @@ export interface ProjectContext {
     tags: string[];
     config: Record<string, unknown>;
 }
-export declare function createTask(title: string, description: string, options?: Partial<Omit<Task, "id" | "title" | "description" | "createdAt" | "updatedAt">>): Task;
-export declare function createNote(agent: AgentRole, content: string, category?: AgentNote["category"]): AgentNote;
-export declare function createProject(name: string, description: string, options?: Partial<Omit<ProjectContext, "id" | "name" | "description" | "createdAt" | "updatedAt">>): ProjectContext;
+export declare function createTask(title: string, description: string, options?: Partial<Omit<Task, 'id' | 'title' | 'description' | 'createdAt' | 'updatedAt'>>): Task;
+export declare function createNote(agent: AgentRole, content: string, category?: AgentNote['category']): AgentNote;
+export declare function createProject(name: string, description: string, options?: Partial<Omit<ProjectContext, 'id' | 'name' | 'description' | 'createdAt' | 'updatedAt'>>): ProjectContext;
 export declare function bumpVersion(context: ProjectContext): ProjectContext;
-export declare function addTask(context: ProjectContext, title: string, description: string, options?: Partial<Omit<Task, "id" | "title" | "description" | "createdAt" | "updatedAt">>): {
+export declare function addTask(context: ProjectContext, title: string, description: string, options?: Partial<Omit<Task, 'id' | 'title' | 'description' | 'createdAt' | 'updatedAt'>>): {
     context: ProjectContext;
     task: Task;
 };
-export declare function addNote(context: ProjectContext, agent: AgentRole, content: string, category?: AgentNote["category"]): {
+export declare function addNote(context: ProjectContext, agent: AgentRole, content: string, category?: AgentNote['category']): {
     context: ProjectContext;
     note: AgentNote;
 };
