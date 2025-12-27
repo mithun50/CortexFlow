@@ -10,7 +10,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { getStorage } from "./storage.js";
-import { Phase, TaskStatus, AgentRole, createProject, addTask, addNote, updateTaskStatus, updateTaskNote, setPhase, getTask, getProjectSummary, } from "./models.js";
+import { Phase, TaskStatus, AgentRole, createProject, addTask, addNote, updateTaskStatus, updateTaskNote, setPhase, getTask, getProjectSummary, validateTaskDependencies, getTaskGraph, } from "./models.js";
 // ============================================================================
 // Tool Definitions
 // ============================================================================
@@ -271,6 +271,45 @@ Phases:
             required: ["project_id"],
         },
     },
+    // Dependency Management
+    {
+        name: "validate_task_dependencies",
+        description: `Validate all task dependencies in the active project.
+
+Use this to:
+- Check for circular dependencies
+- Find missing task references
+- Identify completed tasks with incomplete dependencies
+- Ensure task structure is valid before execution
+
+Returns validation status with errors and warnings.`,
+        inputSchema: {
+            type: "object",
+            properties: {},
+        },
+    },
+    {
+        name: "get_task_graph",
+        description: `Get a visual representation of task dependencies and execution order.
+
+Use this to:
+- Understand task relationships at a glance
+- See which tasks can be started now (ready tasks)
+- Identify blocked tasks waiting on dependencies
+- Get recommended execution order
+
+Returns a graph with nodes, execution order, blocked tasks, and ready tasks.`,
+        inputSchema: {
+            type: "object",
+            properties: {
+                format: {
+                    type: "string",
+                    enum: ["detailed", "summary"],
+                    description: "Output format. Default: detailed",
+                },
+            },
+        },
+    },
 ];
 function success(text) {
     return { content: [{ type: "text", text }] };
@@ -463,6 +502,115 @@ async function handleDeleteProject(args) {
     }
     return success(`Project deleted: ${projectId}`);
 }
+async function handleValidateTaskDependencies() {
+    const storage = await getStorage();
+    const context = await storage.getActiveProject();
+    if (!context) {
+        return error("No active project.");
+    }
+    const validation = validateTaskDependencies(context);
+    if (validation.isValid) {
+        let message = "✓ All task dependencies are valid!";
+        if (validation.warnings.length > 0) {
+            message += `\n\nWarnings:\n${validation.warnings.map((w) => `  ⚠ ${w}`).join("\n")}`;
+        }
+        return success(message);
+    }
+    let message = "✗ Task dependency validation failed!\n\nErrors:\n";
+    message += validation.errors.map((e) => `  ✗ ${e}`).join("\n");
+    if (validation.warnings.length > 0) {
+        message += `\n\nWarnings:\n${validation.warnings.map((w) => `  ⚠ ${w}`).join("\n")}`;
+    }
+    return error(message);
+}
+async function handleGetTaskGraph(args) {
+    const storage = await getStorage();
+    const context = await storage.getActiveProject();
+    if (!context) {
+        return error("No active project.");
+    }
+    const format = args.format || "detailed";
+    const graph = getTaskGraph(context);
+    if (format === "summary") {
+        const message = `Task Graph Summary:
+- Total tasks: ${graph.nodes.length}
+- Ready to start: ${graph.readyTasks.length}
+- Blocked by dependencies: ${graph.blockedTasks.length}
+- Execution order available: ${graph.executionOrder.length > 0 ? "Yes" : "No (circular dependencies)"}
+
+Ready Tasks (can start now):
+${graph.readyTasks.map((id) => {
+            const node = graph.nodes.find((n) => n.id === id);
+            return `  • [${id}] ${node?.title} (${node?.status})`;
+        }).join("\n") || "  (none)"}
+
+Blocked Tasks:
+${graph.blockedTasks.map((id) => {
+            const node = graph.nodes.find((n) => n.id === id);
+            const depCount = node?.dependencies.length || 0;
+            return `  • [${id}] ${node?.title} (waiting on ${depCount} dependencies)`;
+        }).join("\n") || "  (none)"}`;
+        return success(message);
+    }
+    // Detailed format
+    let message = `Task Dependency Graph:\n\n`;
+    // Show all nodes with their relationships
+    message += "Tasks:\n";
+    for (const node of graph.nodes) {
+        message += `\n  [${node.id}] ${node.title}\n`;
+        message += `    Status: ${node.status}\n`;
+        if (node.dependencies.length > 0) {
+            message += `    Depends on: ${node.dependencies.map((id) => {
+                const dep = graph.nodes.find((n) => n.id === id);
+                return `${id} (${dep?.title})`;
+            }).join(", ")}\n`;
+        }
+        if (node.dependents.length > 0) {
+            message += `    Required by: ${node.dependents.map((id) => {
+                const dep = graph.nodes.find((n) => n.id === id);
+                return `${id} (${dep?.title})`;
+            }).join(", ")}\n`;
+        }
+    }
+    // Show execution order
+    if (graph.executionOrder.length > 0) {
+        message += `\n\nRecommended Execution Order:\n`;
+        graph.executionOrder.forEach((id, index) => {
+            const node = graph.nodes.find((n) => n.id === id);
+            message += `  ${index + 1}. [${id}] ${node?.title}\n`;
+        });
+    }
+    else {
+        message += `\n\n⚠ Cannot determine execution order (circular dependencies detected)\n`;
+    }
+    // Show ready tasks
+    message += `\n\nReady Tasks (can start now):\n`;
+    if (graph.readyTasks.length > 0) {
+        graph.readyTasks.forEach((id) => {
+            const node = graph.nodes.find((n) => n.id === id);
+            message += `  • [${id}] ${node?.title}\n`;
+        });
+    }
+    else {
+        message += `  (none)\n`;
+    }
+    // Show blocked tasks
+    message += `\nBlocked Tasks:\n`;
+    if (graph.blockedTasks.length > 0) {
+        graph.blockedTasks.forEach((id) => {
+            const node = graph.nodes.find((n) => n.id === id);
+            const incompleteDeps = node?.dependencies.filter((depId) => {
+                const dep = graph.nodes.find((n) => n.id === depId);
+                return dep?.status !== TaskStatus.COMPLETED;
+            }) || [];
+            message += `  • [${id}] ${node?.title} (waiting on ${incompleteDeps.length} dependencies)\n`;
+        });
+    }
+    else {
+        message += `  (none)\n`;
+    }
+    return success(message);
+}
 // ============================================================================
 // Server Setup
 // ============================================================================
@@ -505,6 +653,10 @@ export async function createServer() {
                     return await handleSetActiveProject(args ?? {});
                 case "delete_project":
                     return await handleDeleteProject(args ?? {});
+                case "validate_task_dependencies":
+                    return await handleValidateTaskDependencies();
+                case "get_task_graph":
+                    return await handleGetTaskGraph(args ?? {});
                 default:
                     return error(`Unknown tool: ${name}`);
             }

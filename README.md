@@ -240,6 +240,13 @@ For any MCP-compatible client, use stdio transport:
 | `add_note` | Add a note for other AI agents |
 | `set_phase` | Update project phase (planning/execution/review/completed) |
 
+### Dependency Management
+
+| Tool | Description |
+|------|-------------|
+| `validate_task_dependencies` | Validate all task dependencies (detect circular dependencies, missing tasks) |
+| `get_task_graph` | Get visual representation of task dependencies and execution order |
+
 ### Project Management
 
 | Tool | Description |

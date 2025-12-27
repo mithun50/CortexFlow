@@ -4,7 +4,7 @@
  * Provides JSON file-based storage for project contexts.
  * Supports multi-project management and atomic file operations.
  */
-import { readFile, writeFile, mkdir, readdir, unlink, access } from "fs/promises";
+import { readFile, writeFile, mkdir, readdir, unlink } from "fs/promises";
 import { join, dirname } from "path";
 import { homedir } from "os";
 import { serializeContext, deserializeContext, } from "./models.js";
@@ -21,15 +21,6 @@ async function ensureDir(dir) {
     }
     catch {
         // Directory already exists
-    }
-}
-async function _fileExists(path) {
-    try {
-        await access(path);
-        return true;
-    }
-    catch {
-        return false;
     }
 }
 function getProjectPath(projectId) {

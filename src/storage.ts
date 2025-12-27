@@ -5,7 +5,7 @@
  * Supports multi-project management and atomic file operations.
  */
 
-import { readFile, writeFile, mkdir, readdir, unlink, access } from "fs/promises";
+import { readFile, writeFile, mkdir, readdir, unlink } from "fs/promises";
 import { join, dirname } from "path";
 import { homedir } from "os";
 import {
@@ -29,15 +29,6 @@ async function ensureDir(dir: string): Promise<void> {
     await mkdir(dir, { recursive: true });
   } catch {
     // Directory already exists
-  }
-}
-
-async function _fileExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
   }
 }
 
@@ -90,7 +81,7 @@ export async function createStorage(): Promise<Storage> {
       // Clear active project if it was deleted
       const activeId = await getActiveProjectId();
       if (activeId === projectId) {
-        await unlink(activeProjectPath).catch(() => {});
+        await unlink(activeProjectPath).catch(() => { });
       }
       return true;
     } catch {
