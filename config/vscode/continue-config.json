@@ -1,0 +1,13 @@
+{
+  "experimental": {
+    "modelContextProtocolServers": [
+      {
+        "transport": {
+          "type": "stdio",
+          "command": "node",
+          "args": ["/path/to/cortexflow/dist/index.js"]
+        }
+      }
+    ]
+  }
+}

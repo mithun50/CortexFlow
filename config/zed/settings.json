@@ -1,0 +1,13 @@
+{
+  "assistant": {
+    "version": "2",
+    "context_servers": {
+      "cortexflow": {
+        "command": {
+          "path": "node",
+          "args": ["/path/to/cortexflow/dist/index.js"]
+        }
+      }
+    }
+  }
+}

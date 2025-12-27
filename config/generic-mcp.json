@@ -1,0 +1,10 @@
+{
+  "name": "cortexflow",
+  "description": "AI-to-AI task continuation server",
+  "transport": "stdio",
+  "command": "node",
+  "args": ["/path/to/cortexflow/dist/index.js"],
+  "env": {
+    "CORTEXFLOW_DATA_DIR": "/path/to/.cortexflow/data"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "cortexflow": {
+      "command": "node",
+      "args": ["/path/to/cortexflow/dist/index.js"],
+      "env": {
+        "CORTEXFLOW_DATA_DIR": "/path/to/.cortexflow/data"
+      }
+    }
+  }
+}

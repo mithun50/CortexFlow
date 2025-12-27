@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "cortexflow": {
+      "command": "node",
+      "args": ["/path/to/cortexflow/dist/index.js"],
+      "description": "AI-to-AI task continuation server"
+    }
+  }
+}

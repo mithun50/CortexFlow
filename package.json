@@ -1,0 +1,50 @@
+{
+  "name": "cortexflow",
+  "version": "1.0.0",
+  "description": "Universal MCP server for AI-to-AI task continuation - Claude Code, ChatGPT, Gemini, Cursor, VS Code, Qwen, and more",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:http": "node dist/index.js --http",
+    "start:both": "node dist/index.js --both",
+    "dev": "tsx src/index.ts",
+    "dev:http": "tsx src/index.ts --http",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "claude",
+    "claude-code",
+    "chatgpt",
+    "gemini",
+    "cursor",
+    "vscode",
+    "qwen",
+    "context-sharing",
+    "task-management",
+    "ai-collaboration",
+    "ai-agents"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "cortexflow": "./dist/index.js"
+  }
+}
