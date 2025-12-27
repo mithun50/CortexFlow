@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CortexFlow - Universal MCP Server for AI-to-AI Task Continuation">
   <title>CortexFlow - AI-to-AI Task Continuation</title>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
@@ -14,160 +15,385 @@
     :root {
       --bg: #0d1117;
       --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
       --border: #30363d;
       --text: #c9d1d9;
       --text-muted: #8b949e;
       --accent: #58a6ff;
       --accent-hover: #79b8ff;
       --success: #3fb950;
+      --warning: #d29922;
+      --sidebar-width: 260px;
+      --header-height: 60px;
+      --footer-height: 50px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.6;
+      overflow-x: hidden;
     }
-    .container { display: flex; min-height: 100vh; }
+
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--header-height);
+      background: rgba(22, 27, 34, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      z-index: 1000;
+    }
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+    .header-logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .header-logo span { color: var(--accent); }
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .header-badges img { height: 20px; transition: transform 0.2s; }
+    .header-badges a:hover img { transform: scale(1.05); }
+    .header-right { display: flex; align-items: center; gap: 1rem; }
+    .header-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .header-link:hover { color: var(--text); background: var(--bg-tertiary); }
+    .header-cta {
+      background: var(--accent);
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .header-cta:hover { background: var(--accent-hover); }
 
     /* Sidebar */
     .sidebar {
-      width: 280px;
+      position: fixed;
+      top: var(--header-height);
+      left: 0;
+      width: var(--sidebar-width);
+      height: calc(100vh - var(--header-height));
       background: var(--bg-secondary);
       border-right: 1px solid var(--border);
-      padding: 1.5rem;
-      position: fixed;
-      height: 100vh;
+      padding: 1.5rem 1rem;
       overflow-y: auto;
+      transition: transform 0.3s ease;
+      z-index: 900;
     }
-    .logo { font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
-    .tagline { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
-    .nav-section { margin-bottom: 1.5rem; }
-    .nav-title { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .sidebar::-webkit-scrollbar { width: 6px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .sidebar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    .install-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.85rem;
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .install-box:hover { border-color: var(--accent); }
+    .install-box .copy-icon { color: var(--text-muted); font-size: 0.9rem; }
+    .install-box.copied { border-color: var(--success); }
+    .install-box.copied .copy-icon { color: var(--success); }
+
+    .nav-section { margin-bottom: 1.25rem; }
+    .nav-title {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+      padding: 0 0.5rem;
+    }
     .nav-link {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       padding: 0.5rem 0.75rem;
       color: var(--text);
       text-decoration: none;
       border-radius: 6px;
-      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
       transition: all 0.15s;
     }
-    .nav-link:hover { background: var(--border); }
+    .nav-link:hover { background: var(--bg-tertiary); }
     .nav-link.active { background: rgba(88,166,255,0.15); color: var(--accent); }
-    .badges { margin-top: 1.5rem; }
-    .badges a { margin-right: 0.5rem; }
-    .install-box {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.75rem;
-      margin-top: 1rem;
-      font-family: monospace;
-      font-size: 0.85rem;
-      color: var(--success);
-    }
+    .nav-link .icon { font-size: 1rem; width: 1.25rem; text-align: center; }
 
     /* Main Content */
     .main {
-      flex: 1;
-      margin-left: 280px;
-      padding: 2rem 3rem;
-      max-width: 900px;
+      margin-left: var(--sidebar-width);
+      margin-top: var(--header-height);
+      min-height: calc(100vh - var(--header-height) - var(--footer-height));
+      padding: 2rem 3rem 3rem;
     }
-    .content h1 { font-size: 2rem; margin: 2rem 0 1rem; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
-    .content h2 { font-size: 1.5rem; margin: 1.75rem 0 1rem; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+    .content {
+      max-width: 850px;
+      margin: 0 auto;
+    }
+    .content h1 {
+      font-size: 2rem;
+      margin: 2rem 0 1rem;
+      color: #fff;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+    .content h1:first-child { margin-top: 0; }
+    .content h2 {
+      font-size: 1.5rem;
+      margin: 2rem 0 1rem;
+      color: #fff;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
     .content h3 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; color: #fff; }
-    .content h4 { font-size: 1rem; margin: 1.25rem 0 0.5rem; color: var(--text); }
+    .content h4 { font-size: 1.1rem; margin: 1.25rem 0 0.5rem; color: var(--text); }
     .content p { margin-bottom: 1rem; }
     .content a { color: var(--accent); text-decoration: none; }
     .content a:hover { text-decoration: underline; }
+    .content strong { color: #fff; }
     .content code {
-      background: var(--bg-secondary);
+      background: var(--bg-tertiary);
       padding: 0.2rem 0.4rem;
       border-radius: 4px;
-      font-size: 0.9em;
+      font-size: 0.875em;
       font-family: 'SFMono-Regular', Consolas, monospace;
     }
     .content pre {
       background: var(--bg-secondary);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 1rem;
       overflow-x: auto;
       margin: 1rem 0;
+      position: relative;
     }
-    .content pre code { background: transparent; padding: 0; }
+    .content pre::-webkit-scrollbar { height: 8px; }
+    .content pre::-webkit-scrollbar-track { background: var(--bg-tertiary); border-radius: 4px; }
+    .content pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .content pre::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    .content pre code { background: transparent; padding: 0; font-size: 0.875rem; }
     .content table {
       width: 100%;
       border-collapse: collapse;
       margin: 1rem 0;
+      font-size: 0.9rem;
+      overflow-x: auto;
+      display: block;
     }
     .content th, .content td {
       border: 1px solid var(--border);
       padding: 0.75rem;
       text-align: left;
+      white-space: nowrap;
     }
-    .content th { background: var(--bg-secondary); color: #fff; }
-    .content ul, .content ol { margin: 1rem 0; padding-left: 2rem; }
+    .content th { background: var(--bg-secondary); color: #fff; font-weight: 600; }
+    .content tr:hover { background: var(--bg-secondary); }
+    .content ul, .content ol { margin: 1rem 0; padding-left: 1.5rem; }
     .content li { margin-bottom: 0.5rem; }
+    .content li > ul, .content li > ol { margin: 0.5rem 0; }
     .content blockquote {
       border-left: 4px solid var(--accent);
-      padding-left: 1rem;
+      padding: 0.5rem 1rem;
       margin: 1rem 0;
+      background: var(--bg-secondary);
+      border-radius: 0 8px 8px 0;
+    }
+    .content blockquote p { margin: 0; color: var(--text-muted); }
+    .content img { max-width: 100%; border-radius: 8px; margin: 0.25rem 0; }
+    .content hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+    /* Badges fix */
+    .content p img {
+      display: inline-block;
+      vertical-align: middle;
+      margin: 0.1rem 0.25rem 0.1rem 0;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 4rem;
       color: var(--text-muted);
     }
-    .content img { max-width: 100%; border-radius: 6px; }
-    .loading { text-align: center; padding: 3rem; color: var(--text-muted); }
+    .loading::after {
+      content: '';
+      display: block;
+      width: 30px;
+      height: 30px;
+      margin: 1rem auto;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Mobile */
+    /* Footer */
+    .footer {
+      margin-left: var(--sidebar-width);
+      height: var(--footer-height);
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .footer a { color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+    .footer a:hover { color: var(--accent); }
+
+    /* Overlay for mobile */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 850;
+    }
+    .overlay.active { display: block; }
+
+    /* Mobile Responsive */
+    @media (max-width: 1024px) {
+      .main { padding: 1.5rem 2rem 2rem; }
+      .header-badges { display: none; }
+    }
     @media (max-width: 768px) {
-      .sidebar { display: none; }
-      .main { margin-left: 0; padding: 1rem; }
+      .menu-toggle { display: block; }
+      .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+      }
+      .sidebar.active { transform: translateX(0); }
+      .main { margin-left: 0; padding: 1.25rem; }
+      .footer { margin-left: 0; }
+      .header-right .header-link { display: none; }
+      .content h1 { font-size: 1.5rem; }
+      .content h2 { font-size: 1.25rem; }
+      .content pre { font-size: 0.8rem; padding: 0.75rem; }
+      .content table { font-size: 0.8rem; }
+      .content th, .content td { padding: 0.5rem; }
+    }
+    @media (max-width: 480px) {
+      .header { padding: 0 1rem; }
+      .header-logo { font-size: 1.1rem; }
+      .header-cta { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+      .main { padding: 1rem; }
+      .content { font-size: 0.95rem; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <nav class="sidebar">
-      <div class="logo">CortexFlow</div>
-      <div class="tagline">AI-to-AI Task Continuation</div>
-
-      <div class="install-box">npm i -g cortexflow</div>
-
-      <div class="nav-section">
-        <div class="nav-title">Documentation</div>
-        <a href="#" class="nav-link active" data-doc="readme">README</a>
-        <a href="#" class="nav-link" data-doc="api">API Reference</a>
-        <a href="#" class="nav-link" data-doc="usage">Usage Guide</a>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <a href="#readme" class="header-logo">⚡ Cortex<span>Flow</span></a>
+      <div class="header-badges">
+        <a href="https://github.com/mithun50/CortexFlow" target="_blank"><img src="https://img.shields.io/github/stars/mithun50/CortexFlow?style=flat&logo=github&color=181717" alt="Stars"></a>
+        <a href="https://www.npmjs.com/package/cortexflow" target="_blank"><img src="https://img.shields.io/npm/v/cortexflow?logo=npm&color=cb3837" alt="npm"></a>
+        <a href="https://github.com/mithun50/CortexFlow/actions/workflows/ci.yml" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/mithun50/CortexFlow/ci.yml?label=CI&logo=githubactions&logoColor=white" alt="CI"></a>
       </div>
+    </div>
+    <div class="header-right">
+      <a href="https://github.com/mithun50/CortexFlow" class="header-link" target="_blank">GitHub</a>
+      <a href="https://www.npmjs.com/package/cortexflow" class="header-link" target="_blank">npm</a>
+      <a href="https://github.com/sponsors/mithun50" class="header-cta" target="_blank">♥ Sponsor</a>
+    </div>
+  </header>
 
-      <div class="nav-section">
-        <div class="nav-title">Community</div>
-        <a href="#" class="nav-link" data-doc="contributing">Contributing</a>
-        <a href="#" class="nav-link" data-doc="security">Security</a>
-        <a href="#" class="nav-link" data-doc="coc">Code of Conduct</a>
-      </div>
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="install-box" id="installBox" title="Click to copy">
+      <span>npm i -g cortexflow</span>
+      <span class="copy-icon">📋</span>
+    </div>
 
-      <div class="nav-section">
-        <div class="nav-title">Links</div>
-        <a href="https://github.com/mithun50/CortexFlow" class="nav-link" target="_blank">GitHub ↗</a>
-        <a href="https://www.npmjs.com/package/cortexflow" class="nav-link" target="_blank">npm ↗</a>
-        <a href="https://github.com/sponsors/mithun50" class="nav-link" target="_blank">Sponsor ↗</a>
-      </div>
+    <div class="nav-section">
+      <div class="nav-title">Documentation</div>
+      <a href="#readme" class="nav-link active" data-doc="readme"><span class="icon">📖</span> README</a>
+      <a href="#api" class="nav-link" data-doc="api"><span class="icon">🔧</span> API Reference</a>
+      <a href="#usage" class="nav-link" data-doc="usage"><span class="icon">📋</span> Usage Guide</a>
+    </div>
 
-      <div class="badges">
-        <a href="https://github.com/mithun50/CortexFlow"><img src="https://img.shields.io/github/stars/mithun50/CortexFlow?style=flat&color=58a6ff" alt="Stars"></a>
-        <a href="https://www.npmjs.com/package/cortexflow"><img src="https://img.shields.io/npm/v/cortexflow?color=cb3837" alt="npm"></a>
-      </div>
-    </nav>
+    <div class="nav-section">
+      <div class="nav-title">Community</div>
+      <a href="#contributing" class="nav-link" data-doc="contributing"><span class="icon">🤝</span> Contributing</a>
+      <a href="#security" class="nav-link" data-doc="security"><span class="icon">🔒</span> Security</a>
+      <a href="#coc" class="nav-link" data-doc="coc"><span class="icon">📜</span> Code of Conduct</a>
+    </div>
 
-    <main class="main">
-      <div id="content" class="content">
-        <div class="loading">Loading documentation...</div>
-      </div>
-    </main>
-  </div>
+    <div class="nav-section">
+      <div class="nav-title">Links</div>
+      <a href="https://github.com/mithun50/CortexFlow" class="nav-link" target="_blank"><span class="icon">🐙</span> GitHub</a>
+      <a href="https://www.npmjs.com/package/cortexflow" class="nav-link" target="_blank"><span class="icon">📦</span> npm Registry</a>
+      <a href="https://github.com/sponsors/mithun50" class="nav-link" target="_blank"><span class="icon">💖</span> Sponsor</a>
+    </div>
+  </nav>
+
+  <!-- Overlay -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div id="content" class="content">
+      <div class="loading">Loading documentation...</div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <span>© 2025 <a href="https://github.com/mithun50">Mithun Gowda B</a></span>
+    <a href="https://github.com/mithun50/CortexFlow/blob/master/LICENSE">MIT License</a>
+    <a href="https://github.com/mithun50/CortexFlow/issues">Report Issue</a>
+  </footer>
 
   <script>
     const DOCS = {
@@ -181,7 +407,37 @@
 
     const contentEl = document.getElementById('content');
     const navLinks = document.querySelectorAll('.nav-link[data-doc]');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const menuToggle = document.getElementById('menuToggle');
+    const installBox = document.getElementById('installBox');
 
+    // Mobile menu
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('active');
+      overlay.classList.toggle('active');
+    });
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('active');
+      overlay.classList.remove('active');
+    });
+
+    // Copy install command
+    installBox.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText('npm i -g cortexflow');
+        installBox.classList.add('copied');
+        installBox.querySelector('.copy-icon').textContent = '✓';
+        setTimeout(() => {
+          installBox.classList.remove('copied');
+          installBox.querySelector('.copy-icon').textContent = '📋';
+        }, 2000);
+      } catch (err) {
+        console.error('Copy failed:', err);
+      }
+    });
+
+    // Markdown config
     marked.setOptions({
       highlight: function(code, lang) {
         if (Prism.languages[lang]) {
@@ -189,7 +445,7 @@
         }
         return code;
       },
-      breaks: true,
+      breaks: false,
       gfm: true
     });
 
@@ -197,7 +453,7 @@
       const url = DOCS[docName];
       if (!url) return;
 
-      contentEl.innerHTML = '<div class="loading">Loading...</div>';
+      contentEl.innerHTML = '<div class="loading">Loading documentation...</div>';
 
       try {
         const response = await fetch(url);
@@ -205,9 +461,13 @@
         const markdown = await response.text();
         contentEl.innerHTML = marked.parse(markdown);
         Prism.highlightAll();
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Close mobile menu
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
       } catch (error) {
-        contentEl.innerHTML = '<div class="loading">Failed to load documentation. Please try again.</div>';
+        contentEl.innerHTML = '<div class="loading" style="color:#f85149">Failed to load documentation. Please try again.</div>';
       }
 
       navLinks.forEach(link => {
@@ -226,7 +486,6 @@
       });
     });
 
-    // Handle initial load and hash changes
     function handleHash() {
       const hash = window.location.hash.slice(1) || 'readme';
       loadDoc(hash);

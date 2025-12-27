@@ -12,6 +12,8 @@
 [![GitHub stars](https://img.shields.io/github/stars/mithun50/CortexFlow?style=social)](https://github.com/mithun50/CortexFlow)
 [![GitHub forks](https://img.shields.io/github/forks/mithun50/CortexFlow?style=social)](https://github.com/mithun50/CortexFlow/fork)
 
+[![📖 Documentation](https://img.shields.io/badge/📖_Docs-Preview-2ea44f)](https://mithun50.github.io/CortexFlow/)
+
 **Universal MCP Server for AI-to-AI Task Continuation**
 
 CortexFlow is an MCP (Model Context Protocol) server that enables seamless handoff between AI agents. When you finish planning with ChatGPT, Claude Code can read the context and continue execution - without re-explaining the project.
@@ -475,6 +477,15 @@ cortexflow --both
 - No authentication (designed for local use)
 - For remote access, use reverse proxy with auth
 - Never expose directly to internet
+
+## Documentation
+
+- **[📖 Full Documentation](https://mithun50.github.io/CortexFlow/)** - Interactive docs website
+- **[📚 API Reference](docs/API.md)** - MCP tools and HTTP endpoints
+- **[📘 Usage Guide](docs/USAGE.md)** - Workflows and best practices
+- **[🤝 Contributing](CONTRIBUTING.md)** - How to contribute
+- **[🔒 Security Policy](SECURITY.md)** - Reporting vulnerabilities
+- **[📜 Code of Conduct](CODE_OF_CONDUCT.md)** - Community guidelines
 
 ## Support the Project
 
