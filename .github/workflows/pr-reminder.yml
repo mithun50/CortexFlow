@@ -1,0 +1,154 @@
+name: PR Review Reminder
+
+on:
+  schedule:
+    - cron: '0 9 * * 1-5'  # Run at 9 AM UTC on weekdays
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  remind-reviewers:
+    name: Remind Pending Reviews
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check and remind on stale PRs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const twoDaysAgo = new Date();
+            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+            // Get all open PRs
+            const { data: prs } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              sort: 'updated',
+              direction: 'asc'
+            });
+
+            for (const pr of prs) {
+              // Skip draft PRs
+              if (pr.draft) continue;
+
+              const prDate = new Date(pr.updated_at);
+
+              // If PR hasn't been updated in 2 days
+              if (prDate < twoDaysAgo) {
+                // Get review requests
+                const { data: reviewRequests } = await github.rest.pulls.listRequestedReviewers({
+                  owner,
+                  repo,
+                  pull_number: pr.number
+                });
+
+                const pendingReviewers = reviewRequests.users.map(u => `@${u.login}`).join(', ');
+
+                if (pendingReviewers) {
+                  // Check if we already commented recently
+                  const { data: comments } = await github.rest.issues.listComments({
+                    owner,
+                    repo,
+                    issue_number: pr.number,
+                    per_page: 5
+                  });
+
+                  const recentReminder = comments.some(c =>
+                    c.user.login === 'github-actions[bot]' &&
+                    c.body.includes('Review Reminder') &&
+                    new Date(c.created_at) > twoDaysAgo
+                  );
+
+                  if (!recentReminder) {
+                    await github.rest.issues.createComment({
+                      owner,
+                      repo,
+                      issue_number: pr.number,
+                      body: `**Review Reminder**\n\nThis PR has been awaiting review for more than 2 days.\n\nPending reviewers: ${pendingReviewers}\n\nPlease review when you have a moment. Thank you!`
+                    });
+
+                    console.log(`Sent reminder for PR #${pr.number}`);
+                  }
+                }
+              }
+            }
+
+  label-needs-review:
+    name: Label PRs Needing Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add needs-review label
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+
+            const { data: prs } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open'
+            });
+
+            for (const pr of prs) {
+              if (pr.draft) continue;
+
+              // Get reviews
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner,
+                repo,
+                pull_number: pr.number
+              });
+
+              const hasApproval = reviews.some(r => r.state === 'APPROVED');
+              const hasChangesRequested = reviews.some(r => r.state === 'CHANGES_REQUESTED');
+
+              // Get current labels
+              const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+                owner,
+                repo,
+                issue_number: pr.number
+              });
+
+              const labelNames = labels.map(l => l.name);
+              const hasNeedsReview = labelNames.includes('needs-review');
+              const hasApprovedLabel = labelNames.includes('approved');
+              const hasChangesLabel = labelNames.includes('changes-requested');
+
+              // Update labels based on review state
+              if (hasApproval && !hasApprovedLabel) {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: pr.number,
+                  labels: ['approved']
+                });
+                if (hasNeedsReview) {
+                  await github.rest.issues.removeLabel({
+                    owner,
+                    repo,
+                    issue_number: pr.number,
+                    name: 'needs-review'
+                  }).catch(() => {});
+                }
+              } else if (hasChangesRequested && !hasChangesLabel) {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: pr.number,
+                  labels: ['changes-requested']
+                });
+              } else if (!hasApproval && !hasChangesRequested && !hasNeedsReview) {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: pr.number,
+                  labels: ['needs-review']
+                });
+              }
+            }

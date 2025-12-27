@@ -1,0 +1,50 @@
+name: Welcome New Contributors
+
+on:
+  pull_request_target:
+    types: [opened]
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  welcome:
+    name: Welcome
+    runs-on: ubuntu-latest
+    steps:
+      - name: Welcome First-Time Contributors
+        uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+          issue-message: |
+            Welcome to CortexFlow! Thanks for opening your first issue here.
+
+            A maintainer will review your issue shortly. In the meantime:
+
+            - Make sure you've read our [Contributing Guidelines](../CONTRIBUTING.md)
+            - Check if there are any similar existing issues
+            - Provide as much detail as possible to help us understand the issue
+
+            We appreciate your contribution to making CortexFlow better!
+
+          pr-message: |
+            Welcome to CortexFlow! Thanks for your first pull request!
+
+            A maintainer will review your changes shortly. Here's what to expect:
+
+            **Review Process:**
+            1. Automated checks will run (tests, linting, security)
+            2. A maintainer will review your code
+            3. You may receive feedback or requests for changes
+            4. Once approved, your PR will be merged
+
+            **While you wait:**
+            - Ensure all CI checks pass
+            - Respond to any review comments
+            - Keep your branch up to date with `master`
+
+            Thank you for contributing to CortexFlow!

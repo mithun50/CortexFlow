@@ -1,0 +1,28 @@
+# Typos configuration
+# https://github.com/crate-ci/typos
+
+[default]
+extend-ignore-re = [
+  # Ignore hex color codes
+  "#[0-9a-fA-F]{6}",
+  # Ignore base64 strings
+  "[A-Za-z0-9+/]{40,}={0,2}",
+  # Ignore URLs
+  "https?://[^\\s]+",
+]
+
+[default.extend-words]
+# Add words to ignore (false positives)
+mcp = "mcp"
+Mithun = "Mithun"
+cortexflow = "cortexflow"
+
+[files]
+extend-exclude = [
+  "node_modules/",
+  "dist/",
+  "package-lock.json",
+  "*.min.js",
+  "coverage/",
+  "docs/api/",
+]

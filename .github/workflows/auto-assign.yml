@@ -1,0 +1,108 @@
+name: Auto Assign PR
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  assign-author:
+    name: Assign PR Author
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Assign PR to author
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+            const author = context.payload.pull_request.user.login;
+
+            // Assign PR to author
+            await github.rest.issues.addAssignees({
+              owner,
+              repo,
+              issue_number: prNumber,
+              assignees: [author]
+            });
+
+            console.log(`Assigned PR #${prNumber} to @${author}`);
+
+  request-review:
+    name: Request Review from Code Owner
+    runs-on: ubuntu-latest
+    if: |
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.login != 'mithun50'
+    steps:
+      - name: Request review from owner
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            try {
+              await github.rest.pulls.requestReviewers({
+                owner,
+                repo,
+                pull_number: prNumber,
+                reviewers: ['mithun50']
+              });
+              console.log(`Requested review from @mithun50 for PR #${prNumber}`);
+            } catch (error) {
+              console.log(`Could not request review: ${error.message}`);
+            }
+
+  add-priority-label:
+    name: Add Priority Label
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check and label priority
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+            const title = context.payload.pull_request.title.toLowerCase();
+            const body = context.payload.pull_request.body?.toLowerCase() || '';
+
+            let labels = [];
+
+            // Priority detection
+            if (title.includes('hotfix') || title.includes('critical') || title.includes('urgent')) {
+              labels.push('priority/critical');
+            } else if (title.includes('bug') || title.includes('fix')) {
+              labels.push('priority/high');
+            } else if (title.includes('feat')) {
+              labels.push('priority/medium');
+            }
+
+            // Type detection from conventional commits
+            if (title.startsWith('feat')) labels.push('type/feature');
+            if (title.startsWith('fix')) labels.push('type/bugfix');
+            if (title.startsWith('docs')) labels.push('type/documentation');
+            if (title.startsWith('refactor')) labels.push('type/refactor');
+            if (title.startsWith('perf')) labels.push('type/performance');
+            if (title.startsWith('test')) labels.push('type/test');
+
+            // Breaking change detection
+            if (title.includes('!') || body.includes('breaking change')) {
+              labels.push('breaking-change');
+            }
+
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: prNumber,
+                labels: labels
+              });
+              console.log(`Added labels: ${labels.join(', ')}`);
+            }

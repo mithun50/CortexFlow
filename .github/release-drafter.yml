@@ -1,0 +1,129 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+categories:
+  - title: ' Breaking Changes'
+    labels:
+      - 'breaking-change'
+      - 'type/breaking'
+
+  - title: ' New Features'
+    labels:
+      - 'type/feature'
+      - 'enhancement'
+      - 'feat'
+
+  - title: ' Bug Fixes'
+    labels:
+      - 'type/bugfix'
+      - 'bug'
+      - 'fix'
+
+  - title: ' Performance Improvements'
+    labels:
+      - 'type/performance'
+      - 'performance'
+      - 'perf'
+
+  - title: ' Documentation'
+    labels:
+      - 'type/documentation'
+      - 'documentation'
+      - 'docs'
+
+  - title: ' Security'
+    labels:
+      - 'security'
+
+  - title: ' Maintenance'
+    labels:
+      - 'type/refactor'
+      - 'refactor'
+      - 'chore'
+      - 'dependencies'
+
+  - title: ' Tests'
+    labels:
+      - 'type/test'
+      - 'test'
+
+  - title: ' Other Changes'
+    labels:
+      - '*'
+
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\<*_&'
+
+version-resolver:
+  major:
+    labels:
+      - 'breaking-change'
+      - 'type/breaking'
+  minor:
+    labels:
+      - 'type/feature'
+      - 'enhancement'
+      - 'feat'
+  patch:
+    labels:
+      - 'type/bugfix'
+      - 'bug'
+      - 'fix'
+      - 'type/documentation'
+      - 'type/performance'
+      - 'type/refactor'
+      - 'chore'
+  default: patch
+
+autolabeler:
+  - label: 'type/feature'
+    title:
+      - '/^feat/i'
+  - label: 'type/bugfix'
+    title:
+      - '/^fix/i'
+  - label: 'type/documentation'
+    title:
+      - '/^docs/i'
+    files:
+      - '*.md'
+      - 'docs/**/*'
+  - label: 'type/refactor'
+    title:
+      - '/^refactor/i'
+  - label: 'type/performance'
+    title:
+      - '/^perf/i'
+  - label: 'type/test'
+    title:
+      - '/^test/i'
+  - label: 'ci'
+    title:
+      - '/^ci/i'
+    files:
+      - '.github/**/*'
+  - label: 'breaking-change'
+    title:
+      - '/^.*!:/i'
+    body:
+      - '/BREAKING CHANGE/i'
+
+exclude-labels:
+  - 'skip-changelog'
+  - 'duplicate'
+  - 'invalid'
+
+exclude-contributors:
+  - 'dependabot'
+  - 'dependabot[bot]'
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  ## Contributors
+
+  $CONTRIBUTORS
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION

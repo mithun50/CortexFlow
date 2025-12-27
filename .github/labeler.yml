@@ -1,0 +1,62 @@
+# Configuration for actions/labeler
+
+# Core source changes
+core:
+  - changed-files:
+      - any-glob-to-any-file: 'src/**/*'
+
+# Documentation changes
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**/*'
+
+# Test changes
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**/*'
+          - '**/*.test.ts'
+          - '**/*.spec.ts'
+
+# CI/CD changes
+ci:
+  - changed-files:
+      - any-glob-to-any-file: '.github/**/*'
+
+# Configuration changes
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.json'
+          - '*.yml'
+          - '*.yaml'
+          - '.env*'
+          - 'tsconfig*.json'
+
+# Dependencies
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
+
+# TypeScript specific
+typescript:
+  - changed-files:
+      - any-glob-to-any-file: '**/*.ts'
+
+# MCP related
+mcp:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/mcp/**/*'
+          - '**/mcp*'
+
+# API related
+api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/api/**/*'
+          - 'src/http/**/*'

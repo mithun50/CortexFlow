@@ -1,0 +1,126 @@
+name: Auto Fix Code
+
+on:
+  push:
+    branches: [master, main, develop]
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-fix:
+    name: Auto Format & Lint Fix
+    runs-on: ubuntu-latest
+
+    # Don't run on commits made by this workflow
+    if: github.actor != 'github-actions[bot]'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # PAT_TOKEN triggers other workflows, GITHUB_TOKEN doesn't
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Prettier (auto-fix)
+        run: npm run format
+        continue-on-error: true
+
+      - name: Run ESLint (auto-fix)
+        run: npm run lint:fix
+        continue-on-error: true
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected:"
+            git status --porcelain
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          fi
+
+      - name: Commit and push changes
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "style: auto-fix formatting and lint issues
+
+          Automatically formatted by GitHub Actions:
+          - Prettier formatting applied
+          - ESLint auto-fixes applied"
+          git push
+
+      - name: Add PR comment
+        if: steps.changes.outputs.has_changes == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '✨ **Auto-formatted!**\n\nI\'ve automatically fixed formatting and lint issues in this PR.\n\nPlease pull the latest changes before pushing new commits.'
+            });
+
+  # Separate job for PRs from forks (can't push back)
+  check-fork:
+    name: Check Fork PR Formatting
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        id: format-check
+        run: |
+          npm run format
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "needs_format=true" >> $GITHUB_OUTPUT
+            git diff --name-only
+          else
+            echo "needs_format=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment on fork PR
+        if: steps.format-check.outputs.needs_format == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '⚠️ **Formatting Required**\n\nThis PR has formatting issues. Since this is a fork, I can\'t auto-fix them.\n\nPlease run the following commands locally:\n```bash\nnpm run format\nnpm run lint:fix\ngit add -A\ngit commit -m "style: fix formatting"\ngit push\n```'
+            });

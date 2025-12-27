@@ -1,0 +1,36 @@
+name: Lock Closed Threads
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sunday
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  lock:
+    name: Lock Inactive Threads
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lock closed issues and PRs
+        uses: dessant/lock-threads@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+          issue-inactive-days: 30
+          issue-lock-reason: 'resolved'
+          issue-comment: |
+            This issue has been automatically locked since there has been no activity for 30 days after it was closed.
+
+            If you have a related issue, please open a new one and reference this issue.
+
+          pr-inactive-days: 30
+          pr-lock-reason: 'resolved'
+          pr-comment: |
+            This pull request has been automatically locked since there has been no activity for 30 days after it was closed.
+
+            If you have related changes, please open a new pull request.
+
+          log-output: true

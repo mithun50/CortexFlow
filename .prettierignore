@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+coverage/
+
+# Package files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Generated files
+docs/api/
+*.min.js
+*.min.css
+
+# Config files that shouldn't be formatted
+.github/workflows/*.yml
+
+# Other
+.git/
+*.log

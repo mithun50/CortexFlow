@@ -1,0 +1,61 @@
+name: Stale Issue & PR Management
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Manage Stale Issues & PRs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark stale issues and PRs
+        uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Stale issue settings
+          stale-issue-message: |
+            This issue has been automatically marked as stale because it has not had recent activity.
+            It will be closed in 14 days if no further activity occurs.
+
+            If this issue is still relevant:
+            - Add a comment with an update
+            - Remove the `stale` label
+
+            Thank you for your contributions!
+          stale-issue-label: 'stale'
+          days-before-issue-stale: 60
+          days-before-issue-close: 14
+          exempt-issue-labels: 'pinned,security,bug,enhancement,help wanted,good first issue'
+
+          # Stale PR settings
+          stale-pr-message: |
+            This pull request has been automatically marked as stale because it has not had recent activity.
+            It will be closed in 7 days if no further activity occurs.
+
+            If you're still working on this:
+            - Push new commits or rebase
+            - Add a comment with your progress
+            - Remove the `stale` label
+
+            Thank you for your contributions!
+          stale-pr-label: 'stale'
+          days-before-pr-stale: 30
+          days-before-pr-close: 7
+          exempt-pr-labels: 'pinned,work-in-progress,do-not-close'
+
+          # Close messages
+          close-issue-message: |
+            This issue was closed due to inactivity. Feel free to reopen if it's still relevant!
+          close-pr-message: |
+            This PR was closed due to inactivity. Feel free to reopen when you're ready to continue!
+
+          # Operation limits
+          operations-per-run: 100
+          ascending: true
