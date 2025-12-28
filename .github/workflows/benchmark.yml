@@ -45,42 +45,67 @@ jobs:
           # Read the benchmark report
           REPORT=$(cat benchmarks/results/report.json)
 
-          # Extract values using node
+          # Extract values and update README using node
           node -e "
+          const fs = require('fs');
           const report = JSON.parse(\`$REPORT\`);
           const s = report.summary;
 
-          const content = \`<!-- BENCHMARK_RESULTS_START -->
-          <details>
-          <summary><b>Performance Metrics</b> (click to expand)</summary>
+          // Read current README
+          let readme = fs.readFileSync('README.md', 'utf8');
 
-          > _Last updated: \${new Date().toISOString().split('T')[0]}_
+          // Update badges
+          const tokenSavings = Math.round(s.avgTokenSavings);
+          const compression = s.avgCompressionRatio.toFixed(1);
+          const memory = Math.round(s.peakMemoryMB);
 
-          ### Summary
+          // Token savings badge
+          readme = readme.replace(
+            /\[!\[Token Savings\].*?\]\(benchmarks\/results\/BENCHMARK\.md\)/,
+            \`[![Token Savings](https://img.shields.io/badge/token%20savings-\${tokenSavings}%25-brightgreen)](benchmarks/results/BENCHMARK.md)\`
+          );
 
-          | Metric | Value |
-          |--------|-------|
-          | Avg Token Savings | **\${s.avgTokenSavings.toFixed(0)}%** |
-          | Avg Compression Ratio | **\${s.avgCompressionRatio.toFixed(1)}x** |
-          | Peak Memory | **\${s.peakMemoryMB.toFixed(0)} MB** |
-          | Avg Ops/Second | **\${(s.avgOpsPerSecond/1000).toFixed(1)}K** |
+          // Compression badge
+          readme = readme.replace(
+            /\[!\[Compression\].*?\]\(benchmarks\/results\/BENCHMARK\.md\)/,
+            \`[![Compression](https://img.shields.io/badge/compression-\${compression}x-green)](benchmarks/results/BENCHMARK.md)\`
+          );
 
-          [📈 View Full Benchmark Report](benchmarks/results/BENCHMARK.md)
+          // Memory badge
+          readme = readme.replace(
+            /\[!\[Memory\].*?\]\(benchmarks\/results\/BENCHMARK\.md\)/,
+            \`[![Memory](https://img.shields.io/badge/memory-\${memory}MB-green)](benchmarks/results/BENCHMARK.md)\`
+          );
 
-          </details>
-          <!-- BENCHMARK_RESULTS_END -->\`;
+          // Update benchmark results section
+          const benchSection = \`<!-- BENCHMARK_RESULTS_START -->
+<details>
+<summary><b>Performance Metrics</b> (click to expand)</summary>
 
-          console.log(content);
-          " > /tmp/bench_section.txt
+> _Last updated: \${new Date().toISOString().split('T')[0]}_
 
-          # Update README between markers
-          sed -i '/<!-- BENCHMARK_RESULTS_START -->/,/<!-- BENCHMARK_RESULTS_END -->/{
-            /<!-- BENCHMARK_RESULTS_START -->/{
-              r /tmp/bench_section.txt
-              d
-            }
-            /<!-- BENCHMARK_RESULTS_END -->/!d
-          }' README.md
+### Summary
+
+| Metric | Value |
+|--------|-------|
+| Avg Token Savings | **\${tokenSavings}%** |
+| Avg Compression Ratio | **\${compression}x** |
+| Peak Memory | **\${memory} MB** |
+| Avg Ops/Second | **\${(s.avgOpsPerSecond/1000).toFixed(1)}K** |
+
+[📈 View Full Benchmark Report](benchmarks/results/BENCHMARK.md)
+
+</details>
+<!-- BENCHMARK_RESULTS_END -->\`;
+
+          readme = readme.replace(
+            /<!-- BENCHMARK_RESULTS_START -->[\s\S]*?<!-- BENCHMARK_RESULTS_END -->/,
+            benchSection
+          );
+
+          fs.writeFileSync('README.md', readme);
+          console.log('README updated with benchmark results');
+          "
 
       - name: Commit updated results
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'

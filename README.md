@@ -15,7 +15,7 @@
 [![Benchmark](https://github.com/mithun50/CortexFlow/actions/workflows/benchmark.yml/badge.svg)](https://github.com/mithun50/CortexFlow/actions/workflows/benchmark.yml)
 [![Token Savings](https://img.shields.io/badge/token%20savings-40--60%25-brightgreen)](benchmarks/results/BENCHMARK.md)
 [![Compression](https://img.shields.io/badge/compression-2.5x-green)](benchmarks/results/BENCHMARK.md)
-[![Memory](https://img.shields.io/badge/memory-<50MB-brightgreen)](benchmarks/results/BENCHMARK.md)
+[![Memory](https://img.shields.io/badge/memory-<150MB-green)](benchmarks/results/BENCHMARK.md)
 
 [![📖 Documentation](https://img.shields.io/badge/📖_Docs-Preview-2ea44f)](https://mithun50.github.io/CortexFlow/)
 
@@ -31,11 +31,11 @@
 
 ### Summary
 
-| Metric                | Value       |
-| --------------------- | ----------- |
-| Avg Token Savings     | **56%**     |
-| Avg Compression Ratio | **5.2x**    |
-| Peak Memory           | **< 90 MB** |
+| Metric                | Value        |
+| --------------------- | ------------ |
+| Avg Token Savings     | **56%**      |
+| Avg Compression Ratio | **5.2x**     |
+| Peak Memory           | **< 150 MB** |
 
 [📈 View Full Benchmark Report](benchmarks/results/BENCHMARK.md)
 
