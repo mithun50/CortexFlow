@@ -12,6 +12,11 @@
 [![GitHub stars](https://img.shields.io/github/stars/mithun50/CortexFlow?style=social)](https://github.com/mithun50/CortexFlow)
 [![GitHub forks](https://img.shields.io/github/forks/mithun50/CortexFlow?style=social)](https://github.com/mithun50/CortexFlow/fork)
 
+[![Benchmark](https://github.com/mithun50/CortexFlow/actions/workflows/benchmark.yml/badge.svg)](https://github.com/mithun50/CortexFlow/actions/workflows/benchmark.yml)
+[![Token Savings](https://img.shields.io/badge/token%20savings-40--60%25-brightgreen)](benchmarks/results/BENCHMARK.md)
+[![Compression](https://img.shields.io/badge/compression-2.5x-green)](benchmarks/results/BENCHMARK.md)
+[![Memory](https://img.shields.io/badge/memory-<50MB-brightgreen)](benchmarks/results/BENCHMARK.md)
+
 [![📖 Documentation](https://img.shields.io/badge/📖_Docs-Preview-2ea44f)](https://mithun50.github.io/CortexFlow/)
 
 **Universal MCP Server for AI-to-AI Task Continuation**

@@ -1162,9 +1162,15 @@ function getOpenAPISpec() {
                                     type: 'object',
                                     required: ['new_name'],
                                     properties: {
-                                        project_id: { type: 'string', description: 'Project to clone (uses active if omitted)' },
+                                        project_id: {
+                                            type: 'string',
+                                            description: 'Project to clone (uses active if omitted)',
+                                        },
                                         new_name: { type: 'string', description: 'Name for cloned project' },
-                                        reset_tasks: { type: 'boolean', description: 'Reset tasks to pending (default: true)' },
+                                        reset_tasks: {
+                                            type: 'boolean',
+                                            description: 'Reset tasks to pending (default: true)',
+                                        },
                                         reset_notes: { type: 'boolean', description: 'Clear notes (default: true)' },
                                     },
                                 },

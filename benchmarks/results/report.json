@@ -1,0 +1,700 @@
+{
+  "timestamp": "2025-12-28T07:42:50.890Z",
+  "version": "2.0.0",
+  "platform": "android",
+  "nodeVersion": "v25.2.1",
+  "results": [
+    {
+      "name": "Create Project",
+      "category": "Storage",
+      "operations": 500,
+      "totalTime": 980.4526059999998,
+      "avgTime": 1.9609052119999997,
+      "minTime": 0.6486149999998361,
+      "maxTime": 8.201538999999912,
+      "opsPerSecond": 509.96855629755964,
+      "p50": 1.726769000000104,
+      "p95": 3.657615999999962,
+      "p99": 5.97107700000015
+    },
+    {
+      "name": "Read Project",
+      "category": "Storage",
+      "operations": 1000,
+      "totalTime": 1349.7012589999824,
+      "avgTime": 1.3497012589999824,
+      "minTime": 0.5391540000000532,
+      "maxTime": 9.614845999999943,
+      "opsPerSecond": 740.9046952663567,
+      "p50": 1.1729230000000825,
+      "p95": 2.467999999999847,
+      "p99": 4.427153000000089
+    },
+    {
+      "name": "List Projects",
+      "category": "Storage",
+      "operations": 500,
+      "totalTime": 315893.79740500014,
+      "avgTime": 631.7875948100003,
+      "minTime": 110.84492300002603,
+      "maxTime": 875.4290000000037,
+      "opsPerSecond": 1.5828104385315345,
+      "p50": 677.2603079999972,
+      "p95": 775.8756159999757,
+      "p99": 816.551615000004
+    },
+    {
+      "name": "Update Project",
+      "category": "Storage",
+      "operations": 500,
+      "totalTime": 1242.8878569999943,
+      "avgTime": 2.4857757139999883,
+      "minTime": 0.6852300000027753,
+      "maxTime": 7.437537999998312,
+      "opsPerSecond": 402.2889089984909,
+      "p50": 2.267461000010371,
+      "p95": 5.500538999971468,
+      "p99": 6.643999999971129
+    },
+    {
+      "name": "Read Large Project (200 tasks)",
+      "category": "Storage",
+      "operations": 500,
+      "totalTime": 1383.3252219995484,
+      "avgTime": 2.766650443999097,
+      "minTime": 1.2783840000047348,
+      "maxTime": 10.424616000032984,
+      "opsPerSecond": 361.4479025237951,
+      "p50": 2.1612309999763966,
+      "p95": 5.9559230000013486,
+      "p99": 8.032614999974612,
+      "metadata": {
+        "taskCount": 200,
+        "noteCount": 50
+      }
+    },
+    {
+      "name": "Critical Path Analysis",
+      "category": "Intelligent",
+      "operations": 500,
+      "totalTime": 189.9093970002723,
+      "avgTime": 0.3798187940005446,
+      "minTime": 0.3123079999932088,
+      "maxTime": 2.301000000035856,
+      "opsPerSecond": 2632.8344352506324,
+      "p50": 0.31846099998801947,
+      "p95": 0.5839230000274256,
+      "p99": 0.7945380000164732
+    },
+    {
+      "name": "Smart Priority Queue",
+      "category": "Intelligent",
+      "operations": 500,
+      "totalTime": 175.33208000013838,
+      "avgTime": 0.3506641600002767,
+      "minTime": 0.3337690000189468,
+      "maxTime": 0.7064609999652021,
+      "opsPerSecond": 2851.7314116139237,
+      "p50": 0.33907700004056096,
+      "p95": 0.40369200002169237,
+      "p99": 0.6082310000201687
+    },
+    {
+      "name": "Context Compression",
+      "category": "Intelligent",
+      "operations": 500,
+      "totalTime": 6.242940999800339,
+      "avgTime": 0.012485881999600679,
+      "minTime": 0.008692999952472746,
+      "maxTime": 0.16092299995943904,
+      "opsPerSecond": 80090.45736872908,
+      "p50": 0.009231000032741576,
+      "p95": 0.01846199994906783,
+      "p99": 0.05569200002355501
+    },
+    {
+      "name": "Health Score Calculation",
+      "category": "Intelligent",
+      "operations": 500,
+      "totalTime": 55.13059700035956,
+      "avgTime": 0.11026119400071911,
+      "minTime": 0.08869299996877089,
+      "maxTime": 1.0799999999580905,
+      "opsPerSecond": 9069.37394486657,
+      "p50": 0.09853900002781302,
+      "p95": 0.15561499999603257,
+      "p99": 0.29930799995781854
+    },
+    {
+      "name": "Generate Suggestions",
+      "category": "Intelligent",
+      "operations": 500,
+      "totalTime": 214.47392500046408,
+      "avgTime": 0.42894785000092817,
+      "minTime": 0.38953799998853356,
+      "maxTime": 1.500616000033915,
+      "opsPerSecond": 2331.2857262201833,
+      "p50": 0.4026919999741949,
+      "p95": 0.5080769999767654,
+      "p99": 0.7757689999998547
+    },
+    {
+      "name": "Compress Small Project",
+      "category": "Token Efficiency",
+      "operations": 200,
+      "totalTime": 0.44345899939071387,
+      "avgTime": 0.0022172949969535695,
+      "minTime": 0.0019229999743402004,
+      "maxTime": 0.004076999961398542,
+      "opsPerSecond": 450999.98032464786,
+      "p50": 0.0021539999870583415,
+      "p95": 0.0023849999997764826,
+      "p99": 0.003691999998409301,
+      "metadata": {
+        "tasks": 10,
+        "notes": 5
+      }
+    },
+    {
+      "name": "Compress Medium Project",
+      "category": "Token Efficiency",
+      "operations": 200,
+      "totalTime": 1.2287699996377341,
+      "avgTime": 0.0061438499981886704,
+      "minTime": 0.004999999946448952,
+      "maxTime": 0.07438400003593415,
+      "opsPerSecond": 162764.390454653,
+      "p50": 0.005307999963406473,
+      "p95": 0.0058460000436753035,
+      "p99": 0.02146100002573803,
+      "metadata": {
+        "tasks": 50,
+        "notes": 20
+      }
+    },
+    {
+      "name": "Compress Large Project",
+      "category": "Token Efficiency",
+      "operations": 200,
+      "totalTime": 1.6498489998630248,
+      "avgTime": 0.008249244999315125,
+      "minTime": 0.007769000018015504,
+      "maxTime": 0.010461999976541847,
+      "opsPerSecond": 121223.21498307091,
+      "p50": 0.008230999985244125,
+      "p95": 0.008537999994587153,
+      "p99": 0.010154000017791986,
+      "metadata": {
+        "tasks": 100,
+        "notes": 40
+      }
+    },
+    {
+      "name": "Compress XLarge Project",
+      "category": "Token Efficiency",
+      "operations": 200,
+      "totalTime": 3.673456999764312,
+      "avgTime": 0.01836728499882156,
+      "minTime": 0.013615000003483146,
+      "maxTime": 0.8221539999940433,
+      "opsPerSecond": 54444.62804732216,
+      "p50": 0.014154000033158809,
+      "p95": 0.01561599998967722,
+      "p99": 0.016306999954394996,
+      "metadata": {
+        "tasks": 200,
+        "notes": 80
+      }
+    },
+    {
+      "name": "Export Small (minimal)",
+      "category": "Context Handoff",
+      "operations": 200,
+      "totalTime": 1.2860100003890693,
+      "avgTime": 0.006430050001945346,
+      "minTime": 0.005307000013999641,
+      "maxTime": 0.0762309999554418,
+      "opsPerSecond": 155519.78595772354,
+      "p50": 0.005539000034332275,
+      "p95": 0.007308000000193715,
+      "p99": 0.02792399999452755,
+      "metadata": {
+        "tasks": 20,
+        "format": "minimal"
+      }
+    },
+    {
+      "name": "Export Small (standard)",
+      "category": "Context Handoff",
+      "operations": 200,
+      "totalTime": 8.188767000101507,
+      "avgTime": 0.040943835000507536,
+      "minTime": 0.025153999973554164,
+      "maxTime": 1.9627690000343136,
+      "opsPerSecond": 24423.701394547043,
+      "p50": 0.028000000049360096,
+      "p95": 0.047691999992821366,
+      "p99": 0.1350760000059381,
+      "metadata": {
+        "tasks": 20,
+        "format": "standard"
+      }
+    },
+    {
+      "name": "Export Small (detailed)",
+      "category": "Context Handoff",
+      "operations": 200,
+      "totalTime": 12.02129900077125,
+      "avgTime": 0.06010649500385625,
+      "minTime": 0.04838500003097579,
+      "maxTime": 0.7907690000138246,
+      "opsPerSecond": 16637.137133613316,
+      "p50": 0.05169200000818819,
+      "p95": 0.08676999999443069,
+      "p99": 0.12553800002206117,
+      "metadata": {
+        "tasks": 20,
+        "format": "detailed"
+      }
+    },
+    {
+      "name": "Export Medium (minimal)",
+      "category": "Context Handoff",
+      "operations": 200,
+      "totalTime": 1.6999210003996268,
+      "avgTime": 0.008499605001998135,
+      "minTime": 0.006154000002425164,
+      "maxTime": 0.3716920000151731,
+      "opsPerSecond": 117652.52617797114,
+      "p50": 0.006462000019382685,
+      "p95": 0.008230999985244125,
+      "p99": 0.009615000046323985,
+      "metadata": {
+        "tasks": 50,
+        "format": "minimal"
+      }
+    },
+    {
+      "name": "Export Medium (standard)",
+      "category": "Context Handoff",
+      "operations": 200,
+      "totalTime": 11.625311000505462,
+      "avgTime": 0.05812655500252731,
+      "minTime": 0.048076000006403774,
+      "maxTime": 0.775614999991376,
+      "opsPerSecond": 17203.840825531817,
+      "p50": 0.04953900002874434,
+      "p95": 0.05576900002779439,
+      "p99": 0.13299999997252598,
+      "metadata": {
+        "tasks": 50,
+        "format": "standard"
+      }
+    },
+    {
+      "name": "Export Medium (detailed)",
+      "category": "Context Handoff",
+      "operations": 200,
+      "totalTime": 25.585915999661665,
+      "avgTime": 0.12792957999830834,
+      "minTime": 0.1024609999731183,
+      "maxTime": 1.1323080000001937,
+      "opsPerSecond": 7816.800461732332,
+      "p50": 0.10769199999049306,
+      "p95": 0.18561599997337908,
+      "p99": 0.7526160000124946,
+      "metadata": {
+        "tasks": 50,
+        "format": "detailed"
+      }
+    },
+    {
+      "name": "Export Large (minimal)",
+      "category": "Context Handoff",
+      "operations": 200,
+      "totalTime": 3.002391999878455,
+      "avgTime": 0.015011959999392276,
+      "minTime": 0.009846000000834465,
+      "maxTime": 0.7867689999984577,
+      "opsPerSecond": 66613.5534627379,
+      "p50": 0.010154000017791986,
+      "p95": 0.01284699997631833,
+      "p99": 0.024616000009700656,
+      "metadata": {
+        "tasks": 100,
+        "format": "minimal"
+      }
+    },
+    {
+      "name": "Export Large (standard)",
+      "category": "Context Handoff",
+      "operations": 200,
+      "totalTime": 22.69699899922125,
+      "avgTime": 0.11348499499610626,
+      "minTime": 0.09130799997365102,
+      "maxTime": 1.6113839999889024,
+      "opsPerSecond": 8811.7376225316,
+      "p50": 0.09484600002178922,
+      "p95": 0.15999999997438863,
+      "p99": 0.4585389999556355,
+      "metadata": {
+        "tasks": 100,
+        "format": "standard"
+      }
+    },
+    {
+      "name": "Export Large (detailed)",
+      "category": "Context Handoff",
+      "operations": 200,
+      "totalTime": 73.3749989993521,
+      "avgTime": 0.3668749949967605,
+      "minTime": 0.27384599996730685,
+      "maxTime": 2.776000000012573,
+      "opsPerSecond": 2725.7240576148556,
+      "p50": 0.31107699999120086,
+      "p95": 0.5046929999953136,
+      "p99": 1.9449230000027455,
+      "metadata": {
+        "tasks": 100,
+        "format": "detailed"
+      }
+    }
+  ],
+  "efficiencyResults": [
+    {
+      "name": "Small Project Compression",
+      "category": "Token Efficiency",
+      "originalSize": 2115,
+      "compressedSize": 446,
+      "savings": 1669,
+      "savingsPercent": 78.91252955082743,
+      "metadata": {
+        "tasks": 10,
+        "notes": 5,
+        "originalBytes": 8460,
+        "compressedBytes": 1782
+      }
+    },
+    {
+      "name": "Medium Project Compression",
+      "category": "Token Efficiency",
+      "originalSize": 10044,
+      "compressedSize": 1617,
+      "savings": 8427,
+      "savingsPercent": 83.90083632019116,
+      "metadata": {
+        "tasks": 50,
+        "notes": 20,
+        "originalBytes": 40175,
+        "compressedBytes": 6465
+      }
+    },
+    {
+      "name": "Large Project Compression",
+      "category": "Token Efficiency",
+      "originalSize": 20068,
+      "compressedSize": 2866,
+      "savings": 17202,
+      "savingsPercent": 85.71855690651785,
+      "metadata": {
+        "tasks": 100,
+        "notes": 40,
+        "originalBytes": 80270,
+        "compressedBytes": 11461
+      }
+    },
+    {
+      "name": "XLarge Project Compression",
+      "category": "Token Efficiency",
+      "originalSize": 40390,
+      "compressedSize": 5508,
+      "savings": 34882,
+      "savingsPercent": 86.36296112899232,
+      "metadata": {
+        "tasks": 200,
+        "notes": 80,
+        "originalBytes": 161558,
+        "compressedBytes": 22031
+      }
+    },
+    {
+      "name": "Small Export (minimal)",
+      "category": "Context Handoff",
+      "originalSize": 4203,
+      "compressedSize": 383,
+      "savings": 3820,
+      "savingsPercent": 90.88746133714014,
+      "metadata": {
+        "tasks": 20,
+        "format": "minimal"
+      }
+    },
+    {
+      "name": "Small Export (standard)",
+      "category": "Context Handoff",
+      "originalSize": 4203,
+      "compressedSize": 2298,
+      "savings": 1905,
+      "savingsPercent": 45.32476802284083,
+      "metadata": {
+        "tasks": 20,
+        "format": "standard"
+      }
+    },
+    {
+      "name": "Small Export (detailed)",
+      "category": "Context Handoff",
+      "originalSize": 4203,
+      "compressedSize": 4450,
+      "savings": -247,
+      "savingsPercent": -5.876754699024507,
+      "metadata": {
+        "tasks": 20,
+        "format": "detailed"
+      }
+    },
+    {
+      "name": "Medium Export (minimal)",
+      "category": "Context Handoff",
+      "originalSize": 10478,
+      "compressedSize": 901,
+      "savings": 9577,
+      "savingsPercent": 91.40103073105554,
+      "metadata": {
+        "tasks": 50,
+        "format": "minimal"
+      }
+    },
+    {
+      "name": "Medium Export (standard)",
+      "category": "Context Handoff",
+      "originalSize": 10478,
+      "compressedSize": 5755,
+      "savings": 4723,
+      "savingsPercent": 45.0753960679519,
+      "metadata": {
+        "tasks": 50,
+        "format": "standard"
+      }
+    },
+    {
+      "name": "Medium Export (detailed)",
+      "category": "Context Handoff",
+      "originalSize": 10478,
+      "compressedSize": 10906,
+      "savings": -428,
+      "savingsPercent": -4.084748997900363,
+      "metadata": {
+        "tasks": 50,
+        "format": "detailed"
+      }
+    },
+    {
+      "name": "Large Export (minimal)",
+      "category": "Context Handoff",
+      "originalSize": 20935,
+      "compressedSize": 1763,
+      "savings": 19172,
+      "savingsPercent": 91.57869596369716,
+      "metadata": {
+        "tasks": 100,
+        "format": "minimal"
+      }
+    },
+    {
+      "name": "Large Export (standard)",
+      "category": "Context Handoff",
+      "originalSize": 20935,
+      "compressedSize": 11403,
+      "savings": 9532,
+      "savingsPercent": 45.53140673513255,
+      "metadata": {
+        "tasks": 100,
+        "format": "standard"
+      }
+    },
+    {
+      "name": "Large Export (detailed)",
+      "category": "Context Handoff",
+      "originalSize": 20935,
+      "compressedSize": 21665,
+      "savings": -730,
+      "savingsPercent": -3.486983520420349,
+      "metadata": {
+        "tasks": 100,
+        "format": "detailed"
+      }
+    }
+  ],
+  "memoryResults": [
+    {
+      "name": "Load 50 Task Project",
+      "category": "Memory",
+      "heapUsedBefore": 21387808,
+      "heapUsedAfter": 21504952,
+      "heapUsedDelta": 117144,
+      "externalBefore": 2551081,
+      "externalAfter": 2551121,
+      "rss": 89501696
+    },
+    {
+      "name": "Compress 50 Task Project",
+      "category": "Memory",
+      "heapUsedBefore": 21511008,
+      "heapUsedAfter": 21516736,
+      "heapUsedDelta": 5728,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 89501696
+    },
+    {
+      "name": "Health Score 50 Tasks",
+      "category": "Memory",
+      "heapUsedBefore": 21517392,
+      "heapUsedAfter": 21535704,
+      "heapUsedDelta": 18312,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 89501696
+    },
+    {
+      "name": "Export 50 Tasks",
+      "category": "Memory",
+      "heapUsedBefore": 21536360,
+      "heapUsedAfter": 21682464,
+      "heapUsedDelta": 146104,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 89501696
+    },
+    {
+      "name": "Load 100 Task Project",
+      "category": "Memory",
+      "heapUsedBefore": 21796856,
+      "heapUsedAfter": 21861664,
+      "heapUsedDelta": 64808,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 89370624
+    },
+    {
+      "name": "Compress 100 Task Project",
+      "category": "Memory",
+      "heapUsedBefore": 21862240,
+      "heapUsedAfter": 21871600,
+      "heapUsedDelta": 9360,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 89370624
+    },
+    {
+      "name": "Health Score 100 Tasks",
+      "category": "Memory",
+      "heapUsedBefore": 21872272,
+      "heapUsedAfter": 21906416,
+      "heapUsedDelta": 34144,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 89370624
+    },
+    {
+      "name": "Export 100 Tasks",
+      "category": "Memory",
+      "heapUsedBefore": 21907088,
+      "heapUsedAfter": 22200216,
+      "heapUsedDelta": 293128,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 89370624
+    },
+    {
+      "name": "Load 200 Task Project",
+      "category": "Memory",
+      "heapUsedBefore": 22427864,
+      "heapUsedAfter": 22887536,
+      "heapUsedDelta": 459672,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 89669632
+    },
+    {
+      "name": "Compress 200 Task Project",
+      "category": "Memory",
+      "heapUsedBefore": 22888704,
+      "heapUsedAfter": 22906912,
+      "heapUsedDelta": 18208,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 89669632
+    },
+    {
+      "name": "Health Score 200 Tasks",
+      "category": "Memory",
+      "heapUsedBefore": 22907584,
+      "heapUsedAfter": 22973560,
+      "heapUsedDelta": 65976,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 89669632
+    },
+    {
+      "name": "Export 200 Tasks",
+      "category": "Memory",
+      "heapUsedBefore": 22974480,
+      "heapUsedAfter": 23563200,
+      "heapUsedDelta": 588720,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 89935872
+    },
+    {
+      "name": "Load 500 Task Project",
+      "category": "Memory",
+      "heapUsedBefore": 24138232,
+      "heapUsedAfter": 12527152,
+      "heapUsedDelta": -11611080,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 85458944
+    },
+    {
+      "name": "Compress 500 Task Project",
+      "category": "Memory",
+      "heapUsedBefore": 12527840,
+      "heapUsedAfter": 12570712,
+      "heapUsedDelta": 42872,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 85458944
+    },
+    {
+      "name": "Health Score 500 Tasks",
+      "category": "Memory",
+      "heapUsedBefore": 12571400,
+      "heapUsedAfter": 12714400,
+      "heapUsedDelta": 143000,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 85458944
+    },
+    {
+      "name": "Export 500 Tasks",
+      "category": "Memory",
+      "heapUsedBefore": 12715088,
+      "heapUsedAfter": 14224144,
+      "heapUsedDelta": 1509056,
+      "externalBefore": 2551121,
+      "externalAfter": 2551121,
+      "rss": 85995520
+    }
+  ],
+  "summary": {
+    "totalBenchmarks": 23,
+    "totalOperations": 8100,
+    "totalTime": 321657.73043799965,
+    "avgOpsPerSecond": 56775.169420169674,
+    "avgTokenSavings": 56.24962734976937,
+    "avgCompressionRatio": 5.240283876000405,
+    "peakMemoryMB": 85.76953125
+  }
+}
