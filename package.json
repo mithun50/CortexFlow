@@ -42,7 +42,7 @@
     "bench:storage": "tsx benchmarks/index.ts --storage",
     "bench:intelligent": "tsx benchmarks/index.ts --intelligent",
     "bench:http": "tsx benchmarks/index.ts --http",
-    "bench:ci": "tsx benchmarks/index.ts --storage --intelligent"
+    "bench:ci": "tsx benchmarks/index.ts --storage --intelligent --tokens --handoff --memory"
   },
   "keywords": [
     "mcp",
