@@ -10,7 +10,10 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
 import { getStorage } from './storage.js';
-import { Phase, TaskStatus, AgentRole, createProject, addTask, addNote, updateTaskStatus, updateTaskNote, setPhase, getTask, getProjectSummary, } from './models.js';
+import { getAdvancedStorage } from './advanced-storage.js';
+import { analyzeCriticalPath, getSmartPriorityQueue, compressContext, getCompressionStats, calculateHealthScore, executeBatchOperations, generateTaskSuggestions, } from './intelligent-features.js';
+import { addPersonalTodo, listPersonalTodos, completeTodo, listDids, setDailyGoals, setWeeklyGoals, getGoals, remember, recall, listMemories, forget, startTimeTracking, stopTimeTracking, getTimeStats, listPromptTemplates, generatePromptFromContext, generateClaudeMd, saveClaudeMd, getDailyDigest, getProductivityStats, } from './productivity-features.js';
+import { Phase, TaskStatus, AgentRole, EventType, AuditAction, createProject, addTask, addNote, updateTaskStatus, updateTaskNote, setPhase, getTask, getProjectSummary, getProjectAnalytics, exportToMarkdown, cloneProject, createWebhook, createSnapshot, createAuditEntry, createProjectFromTemplate, restoreFromSnapshot, } from './models.js';
 // ============================================================================
 // Tool Definitions
 // ============================================================================
@@ -271,6 +274,834 @@ Phases:
             required: ['project_id'],
         },
     },
+    // Analytics & Export (Unique Features)
+    {
+        name: 'get_analytics',
+        description: `Get detailed analytics for a project.
+
+Returns:
+- Task completion rate and statistics
+- Per-agent performance metrics (tasks completed, notes added)
+- Average task duration
+- Blocker and decision counts
+- Phase history
+
+Use this to understand project health and agent productivity.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. If omitted, uses active project.',
+                },
+            },
+        },
+    },
+    {
+        name: 'export_project',
+        description: `Export a project to Markdown format.
+
+Creates a human-readable document with:
+- Project metadata and description
+- All tasks with status, priority, and notes
+- Agent notes with categories and timestamps
+
+Useful for documentation, sharing, or archival.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. If omitted, uses active project.',
+                },
+            },
+        },
+    },
+    {
+        name: 'clone_project',
+        description: `Clone an existing project with optional reset options.
+
+Use this to:
+- Create a template from a successful project
+- Start fresh with the same task structure
+- Create variations of a project
+
+Options:
+- reset_tasks: Reset all tasks to pending (default: true)
+- reset_notes: Clear all notes (default: true)`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID to clone. If omitted, uses active project.',
+                },
+                new_name: {
+                    type: 'string',
+                    description: 'Name for the cloned project',
+                },
+                reset_tasks: {
+                    type: 'boolean',
+                    description: 'Reset all tasks to pending status. Default: true',
+                },
+                reset_notes: {
+                    type: 'boolean',
+                    description: 'Clear all notes from clone. Default: true',
+                },
+            },
+            required: ['new_name'],
+        },
+    },
+    // ============================================================================
+    // Webhook Tools
+    // ============================================================================
+    {
+        name: 'register_webhook',
+        description: `Register a webhook to receive event notifications.
+
+Events you can subscribe to:
+- project.created, project.updated, project.deleted
+- phase.changed
+- task.created, task.updated, task.completed, task.blocked
+- note.added, blocker.added
+- snapshot.created
+
+Webhooks receive POST requests with event data.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                url: {
+                    type: 'string',
+                    description: 'Webhook URL to receive POST requests',
+                },
+                events: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Event types to subscribe to',
+                },
+                secret: {
+                    type: 'string',
+                    description: 'Optional secret for HMAC signature verification',
+                },
+            },
+            required: ['url', 'events'],
+        },
+    },
+    {
+        name: 'list_webhooks',
+        description: 'List all registered webhooks.',
+        inputSchema: {
+            type: 'object',
+            properties: {},
+        },
+    },
+    {
+        name: 'delete_webhook',
+        description: 'Delete a registered webhook.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                webhook_id: {
+                    type: 'string',
+                    description: 'Webhook ID to delete',
+                },
+            },
+            required: ['webhook_id'],
+        },
+    },
+    // ============================================================================
+    // Template Tools
+    // ============================================================================
+    {
+        name: 'list_templates',
+        description: `List available project templates.
+
+Built-in templates:
+- bug-fix: Standard bug fix workflow
+- feature: Full feature development workflow
+- refactor: Safe refactoring workflow
+- review: Code review workflow`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                category: {
+                    type: 'string',
+                    description: 'Filter by category (bug-fix, feature, refactor, review, custom)',
+                },
+            },
+        },
+    },
+    {
+        name: 'create_from_template',
+        description: `Create a new project from a template.
+
+Use list_templates to see available templates.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                template_id: {
+                    type: 'string',
+                    description: 'Template ID to use (e.g., tpl-bugfix, tpl-feature)',
+                },
+                project_name: {
+                    type: 'string',
+                    description: 'Name for the new project',
+                },
+                project_description: {
+                    type: 'string',
+                    description: 'Optional description (uses template description if omitted)',
+                },
+            },
+            required: ['template_id', 'project_name'],
+        },
+    },
+    // ============================================================================
+    // Snapshot Tools (Version Control)
+    // ============================================================================
+    {
+        name: 'create_snapshot',
+        description: `Create a snapshot of the current project state.
+
+Use this to:
+- Save state before risky operations
+- Create checkpoints for rollback
+- Document project milestones`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                name: {
+                    type: 'string',
+                    description: 'Human-readable snapshot name',
+                },
+                description: {
+                    type: 'string',
+                    description: 'Description of what this snapshot captures',
+                },
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. If omitted, uses active project.',
+                },
+            },
+            required: ['name'],
+        },
+    },
+    {
+        name: 'list_snapshots',
+        description: 'List all snapshots for a project.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. If omitted, uses active project.',
+                },
+            },
+        },
+    },
+    {
+        name: 'restore_snapshot',
+        description: `Restore a project to a previous snapshot state.
+
+WARNING: This will overwrite the current project state.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                snapshot_id: {
+                    type: 'string',
+                    description: 'Snapshot ID to restore',
+                },
+            },
+            required: ['snapshot_id'],
+        },
+    },
+    // ============================================================================
+    // Audit Tools
+    // ============================================================================
+    {
+        name: 'get_audit_log',
+        description: `Get the audit log showing all changes to a project.
+
+Tracks:
+- Who made changes (which agent)
+- What was changed (tasks, notes, phase)
+- When changes occurred`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. If omitted, uses active project.',
+                },
+                limit: {
+                    type: 'number',
+                    description: 'Maximum entries to return. Default: 50',
+                },
+                since: {
+                    type: 'string',
+                    description: 'ISO timestamp to filter entries after',
+                },
+            },
+        },
+    },
+    // ============================================================================
+    // Intelligent Features
+    // ============================================================================
+    {
+        name: 'get_critical_path',
+        description: `Analyze task dependencies and find the critical path.
+
+Returns:
+- Critical path (longest dependency chain)
+- Parallelizable task groups
+- Blocked and ready tasks
+- Estimated completion metrics
+
+Use this for intelligent task scheduling and bottleneck identification.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. If omitted, uses active project.',
+                },
+            },
+        },
+    },
+    {
+        name: 'get_smart_queue',
+        description: `Get recommended next tasks using intelligent priority scoring.
+
+Factors considered:
+- Critical path priority
+- Dependency unblocking potential
+- Task age and priority
+- Impact on overall progress
+
+Returns tasks in optimal execution order.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. If omitted, uses active project.',
+                },
+                limit: {
+                    type: 'number',
+                    description: 'Max tasks to return. Default: 5',
+                },
+            },
+        },
+    },
+    {
+        name: 'compress_context',
+        description: `Get a token-efficient compressed representation of the project.
+
+Reduces context size by 40-60% while preserving essential information.
+Ideal for:
+- Passing context between AI agents
+- Reducing token usage in prompts
+- Efficient context serialization`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. If omitted, uses active project.',
+                },
+                include_completed: {
+                    type: 'boolean',
+                    description: 'Include completed tasks. Default: false',
+                },
+                max_notes: {
+                    type: 'number',
+                    description: 'Max notes to include. Default: 10',
+                },
+            },
+        },
+    },
+    {
+        name: 'get_health_score',
+        description: `Get comprehensive project health score and risk analysis.
+
+Analyzes:
+- Velocity and completion rate
+- Blocker ratio
+- Dependency health (circular deps, orphans)
+- Progress rate
+- Staleness and activity
+- Documentation quality
+
+Returns 0-100 score with breakdown, risks, and recommendations.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. If omitted, uses active project.',
+                },
+            },
+        },
+    },
+    {
+        name: 'batch_operations',
+        description: `Execute multiple operations atomically in a single call.
+
+Supported operations:
+- create_task: { title, description, options }
+- update_task: { taskId, updates }
+- delete_task: { taskId }
+- add_note: { agent, content, category }
+- update_status: { taskId, status }
+
+All operations succeed or all fail together.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. If omitted, uses active project.',
+                },
+                operations: {
+                    type: 'array',
+                    description: 'Array of operations to execute',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            type: {
+                                type: 'string',
+                                enum: ['create_task', 'update_task', 'delete_task', 'add_note', 'update_status'],
+                            },
+                            payload: {
+                                type: 'object',
+                            },
+                        },
+                        required: ['type', 'payload'],
+                    },
+                },
+            },
+            required: ['operations'],
+        },
+    },
+    {
+        name: 'get_suggestions',
+        description: `Get intelligent task suggestions based on project state.
+
+Analyzes project and suggests:
+- Actions to unblock tasks
+- Documentation improvements
+- Phase transitions
+- Optimization opportunities
+
+AI-powered recommendations for project health.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. If omitted, uses active project.',
+                },
+            },
+        },
+    },
+    // ============================================================================
+    // Personal Todo/Did List Tools
+    // ============================================================================
+    {
+        name: 'add_personal_todo',
+        description: `Add a personal todo item (separate from project tasks).
+
+Personal todos are for your own task tracking across projects.
+Use for reminders, personal goals, or cross-project tasks.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                content: {
+                    type: 'string',
+                    description: 'Todo content/description',
+                },
+                priority: {
+                    type: 'number',
+                    description: 'Priority 1-5 (1=highest). Default: 3',
+                },
+                tags: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Tags for categorization',
+                },
+                due_date: {
+                    type: 'string',
+                    description: 'Due date in ISO format',
+                },
+                context: {
+                    type: 'string',
+                    description: 'Related project or context',
+                },
+            },
+            required: ['content'],
+        },
+    },
+    {
+        name: 'list_personal_todos',
+        description: 'List personal todo items with optional filtering.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                tag: {
+                    type: 'string',
+                    description: 'Filter by tag',
+                },
+                priority: {
+                    type: 'number',
+                    description: 'Filter by priority level',
+                },
+            },
+        },
+    },
+    {
+        name: 'complete_personal_todo',
+        description: `Mark a personal todo as completed. Moves it to "did" list.
+
+Optionally add reflection on what you learned or how long it took.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                todo_id: {
+                    type: 'string',
+                    description: 'Todo ID to complete',
+                },
+                reflection: {
+                    type: 'string',
+                    description: 'What did you learn? Any insights?',
+                },
+                duration: {
+                    type: 'number',
+                    description: 'How long it took (minutes)',
+                },
+            },
+            required: ['todo_id'],
+        },
+    },
+    {
+        name: 'list_dids',
+        description: `List completed items ("did" list). Track your accomplishments.
+
+Shows what you've completed with optional filtering.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                limit: {
+                    type: 'number',
+                    description: 'Max items to return. Default: 20',
+                },
+                since: {
+                    type: 'string',
+                    description: 'Only items completed after this date (ISO)',
+                },
+                tag: {
+                    type: 'string',
+                    description: 'Filter by tag',
+                },
+            },
+        },
+    },
+    {
+        name: 'set_goals',
+        description: 'Set daily or weekly goals for personal tracking.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                daily: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Daily goals',
+                },
+                weekly: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Weekly goals',
+                },
+            },
+        },
+    },
+    {
+        name: 'get_goals',
+        description: 'Get current daily and weekly goals.',
+        inputSchema: {
+            type: 'object',
+            properties: {},
+        },
+    },
+    // ============================================================================
+    // Session Memory Tools
+    // ============================================================================
+    {
+        name: 'remember',
+        description: `Store something in session memory for later recall.
+
+Categories:
+- preference: User preferences
+- decision: Important decisions made
+- context: Contextual information
+- learning: Insights learned
+- reminder: Things to remember
+
+Memory persists across sessions.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                key: {
+                    type: 'string',
+                    description: 'Memory key for retrieval',
+                },
+                value: {
+                    type: 'string',
+                    description: 'Value to remember',
+                },
+                category: {
+                    type: 'string',
+                    enum: ['preference', 'decision', 'context', 'learning', 'reminder'],
+                    description: 'Memory category. Default: context',
+                },
+                expires_in: {
+                    type: 'number',
+                    description: 'Hours until memory expires (optional)',
+                },
+                project_id: {
+                    type: 'string',
+                    description: 'Link to specific project (optional)',
+                },
+            },
+            required: ['key', 'value'],
+        },
+    },
+    {
+        name: 'recall',
+        description: 'Recall a previously stored memory by key.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                key: {
+                    type: 'string',
+                    description: 'Memory key to recall',
+                },
+            },
+            required: ['key'],
+        },
+    },
+    {
+        name: 'list_memories',
+        description: 'List all stored memories with optional filtering.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                category: {
+                    type: 'string',
+                    enum: ['preference', 'decision', 'context', 'learning', 'reminder'],
+                    description: 'Filter by category',
+                },
+                project_id: {
+                    type: 'string',
+                    description: 'Filter by project',
+                },
+            },
+        },
+    },
+    {
+        name: 'forget',
+        description: 'Remove a specific memory by key.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                key: {
+                    type: 'string',
+                    description: 'Memory key to forget',
+                },
+            },
+            required: ['key'],
+        },
+    },
+    // ============================================================================
+    // Time Tracking Tools
+    // ============================================================================
+    {
+        name: 'start_time_tracking',
+        description: `Start tracking time for a task.
+
+Only one task can be tracked at a time.
+Previous tracking is automatically stopped.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                task_id: {
+                    type: 'string',
+                    description: 'Task ID to track',
+                },
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID',
+                },
+                notes: {
+                    type: 'string',
+                    description: 'Notes about what you\'re working on',
+                },
+            },
+            required: ['task_id', 'project_id'],
+        },
+    },
+    {
+        name: 'stop_time_tracking',
+        description: 'Stop current time tracking and log the entry.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                notes: {
+                    type: 'string',
+                    description: 'Notes about what was accomplished',
+                },
+            },
+        },
+    },
+    {
+        name: 'get_time_stats',
+        description: 'Get time tracking statistics for a project.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID to analyze',
+                },
+            },
+            required: ['project_id'],
+        },
+    },
+    // ============================================================================
+    // Prompt Template Tools
+    // ============================================================================
+    {
+        name: 'list_prompt_templates',
+        description: `List available AI prompt templates.
+
+Categories: planning, coding, debugging, review, documentation, custom`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                category: {
+                    type: 'string',
+                    description: 'Filter by category',
+                },
+            },
+        },
+    },
+    {
+        name: 'generate_prompt',
+        description: `Generate a filled prompt from a template using project context.
+
+Templates auto-fill with project data like task counts, phase, etc.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                template_id: {
+                    type: 'string',
+                    description: 'Template ID to use',
+                },
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID for context. Default: active project',
+                },
+            },
+            required: ['template_id'],
+        },
+    },
+    // ============================================================================
+    // CLAUDE.md Export Tools
+    // ============================================================================
+    {
+        name: 'export_claude_md',
+        description: `Export project context for AI assistants.
+
+Supports multiple AI targets:
+- claude: CLAUDE.md format (default)
+- gemini: GEMINI.md format
+- chatgpt: CHATGPT.md format
+- cursor: CURSOR.md format
+- copilot: COPILOT.md format
+
+Formats:
+- minimal: Just essentials (name, tasks, status)
+- standard: Balanced detail (default)
+- detailed: Everything including full history
+
+Save in project root for automatic context loading.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Project ID. Default: active project',
+                },
+                format: {
+                    type: 'string',
+                    enum: ['minimal', 'standard', 'detailed'],
+                    description: 'Export format. Default: standard',
+                },
+                target: {
+                    type: 'string',
+                    enum: ['claude', 'gemini', 'chatgpt', 'cursor', 'copilot'],
+                    description: 'Target AI assistant. Default: claude',
+                },
+                save_path: {
+                    type: 'string',
+                    description: 'File path to save. If omitted, returns content only.',
+                },
+            },
+        },
+    },
+    // ============================================================================
+    // Productivity Dashboard Tools
+    // ============================================================================
+    {
+        name: 'get_daily_digest',
+        description: `Get a daily productivity digest.
+
+Includes:
+- Todo and did counts
+- Upcoming deadlines
+- Recent completions
+- Goals status
+- Time tracked today
+- Active reminders`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                project_id: {
+                    type: 'string',
+                    description: 'Focus on specific project (optional)',
+                },
+            },
+        },
+    },
+    {
+        name: 'get_productivity_stats',
+        description: `Get productivity statistics over time.
+
+Shows:
+- Tasks completed
+- Average completion time
+- Top tags
+- Streak days
+- Total time tracked`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                period: {
+                    type: 'string',
+                    enum: ['day', 'week', 'month'],
+                    description: 'Time period. Default: week',
+                },
+            },
+        },
+    },
 ];
 function success(text) {
     return { content: [{ type: 'text', text }] };
@@ -463,6 +1294,862 @@ async function handleDeleteProject(args) {
     }
     return success(`Project deleted: ${projectId}`);
 }
+async function handleGetAnalytics(args) {
+    const storage = await getStorage();
+    const projectId = args.project_id;
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const analytics = getProjectAnalytics(context);
+    const agentStatsStr = analytics.agentStats
+        .filter((s) => s.tasksCompleted > 0 || s.tasksInProgress > 0 || s.notesAdded > 0)
+        .map((s) => `  ${s.agent}: ${s.tasksCompleted} completed, ${s.tasksInProgress} in progress, ${s.notesAdded} notes`)
+        .join('\n');
+    const durationStr = analytics.avgTaskDuration
+        ? `${Math.round(analytics.avgTaskDuration / 1000 / 60)} minutes`
+        : 'N/A';
+    return success(`📊 Project Analytics: ${analytics.projectName}
+
+Task Statistics:
+  Total: ${analytics.totalTasks}
+  Completed: ${analytics.completedTasks} (${analytics.completionRate.toFixed(1)}%)
+  Pending: ${analytics.pendingTasks}
+  Blocked: ${analytics.blockedTasks}
+
+Agent Performance:
+${agentStatsStr || '  (no agent activity yet)'}
+
+Metrics:
+  Average Task Duration: ${durationStr}
+  Blockers Recorded: ${analytics.blockerCount}
+  Decisions Made: ${analytics.decisionCount}
+  Current Phase: ${context.phase}`);
+}
+async function handleExportProject(args) {
+    const storage = await getStorage();
+    const projectId = args.project_id;
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const markdown = exportToMarkdown(context);
+    return success(markdown);
+}
+async function handleCloneProject(args) {
+    const storage = await getStorage();
+    const projectId = args.project_id;
+    const newName = args.new_name;
+    const resetTasks = args.reset_tasks ?? true;
+    const resetNotes = args.reset_notes ?? true;
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const cloned = cloneProject(context, newName, {
+        resetTasks: !resetTasks, // cloneProject uses inverse logic (resetTasks=false means keep structure)
+        resetNotes,
+    });
+    await storage.saveProject(cloned);
+    return success(`Project cloned: ${cloned.name} (ID: ${cloned.id})
+Original: ${context.name} (${context.id})
+Tasks: ${cloned.tasks.length}${resetTasks ? ' (reset to pending)' : ''}
+Notes: ${cloned.notes.length}${resetNotes ? ' (cleared)' : ''}`);
+}
+// ============================================================================
+// Webhook Handlers
+// ============================================================================
+async function handleRegisterWebhook(args) {
+    const advanced = await getAdvancedStorage();
+    const url = args.url;
+    const events = args.events;
+    const secret = args.secret;
+    // Validate events
+    const validEvents = Object.values(EventType);
+    const invalidEvents = events.filter((e) => !validEvents.includes(e));
+    if (invalidEvents.length > 0) {
+        return error(`Invalid event types: ${invalidEvents.join(', ')}`);
+    }
+    const webhook = createWebhook(url, events, { secret });
+    await advanced.webhooks.saveWebhook(webhook);
+    return success(`Webhook registered: ${webhook.id}
+URL: ${url}
+Events: ${events.join(', ')}`);
+}
+async function handleListWebhooks() {
+    const advanced = await getAdvancedStorage();
+    const webhooks = await advanced.webhooks.listWebhooks();
+    if (webhooks.length === 0) {
+        return success('No webhooks registered.');
+    }
+    const list = webhooks
+        .map((w) => {
+        const status = w.active ? '✓ Active' : '✗ Disabled';
+        return `[${w.id}] ${status}
+  URL: ${w.url}
+  Events: ${w.events.join(', ')}
+  Failures: ${w.failureCount}`;
+    })
+        .join('\n\n');
+    return success(`Webhooks:\n\n${list}`);
+}
+async function handleDeleteWebhook(args) {
+    const advanced = await getAdvancedStorage();
+    const webhookId = args.webhook_id;
+    const deleted = await advanced.webhooks.deleteWebhook(webhookId);
+    if (!deleted) {
+        return error(`Webhook not found: ${webhookId}`);
+    }
+    return success(`Webhook deleted: ${webhookId}`);
+}
+// ============================================================================
+// Template Handlers
+// ============================================================================
+async function handleListTemplates(args) {
+    const advanced = await getAdvancedStorage();
+    const category = args.category;
+    let templates = await advanced.templates.listTemplates();
+    if (category) {
+        templates = templates.filter((t) => t.category === category);
+    }
+    if (templates.length === 0) {
+        return success('No templates found.');
+    }
+    const list = templates
+        .map((t) => {
+        const tasks = t.tasks.length;
+        return `[${t.id}] ${t.name}
+  Category: ${t.category}
+  Tasks: ${tasks}
+  ${t.description}`;
+    })
+        .join('\n\n');
+    return success(`Templates:\n\n${list}`);
+}
+async function handleCreateFromTemplate(args) {
+    const storage = await getStorage();
+    const advanced = await getAdvancedStorage();
+    const templateId = args.template_id;
+    const projectName = args.project_name;
+    const projectDescription = args.project_description;
+    const template = await advanced.templates.getTemplate(templateId);
+    if (!template) {
+        return error(`Template not found: ${templateId}`);
+    }
+    const project = createProjectFromTemplate(template, projectName, projectDescription);
+    await storage.saveProject(project);
+    await storage.setActiveProject(project.id);
+    // Track template usage
+    await advanced.templates.incrementUsage(templateId);
+    // Emit event
+    await advanced.events.emitEvent(EventType.PROJECT_CREATED, project.id, {
+        name: project.name,
+        template: templateId,
+    });
+    return success(`Project created from template: ${project.name} (ID: ${project.id})
+Template: ${template.name}
+Tasks: ${project.tasks.length}
+Phase: ${project.phase}
+
+Project is now active.`);
+}
+// ============================================================================
+// Snapshot Handlers
+// ============================================================================
+async function handleCreateSnapshot(args) {
+    const storage = await getStorage();
+    const advanced = await getAdvancedStorage();
+    const name = args.name;
+    const description = args.description ?? '';
+    const projectId = args.project_id;
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const snapshot = createSnapshot(context, name, description, AgentRole.EXECUTOR);
+    await advanced.snapshots.saveSnapshot(snapshot);
+    // Emit event
+    await advanced.events.emitEvent(EventType.SNAPSHOT_CREATED, context.id, {
+        snapshotId: snapshot.id,
+        name: snapshot.name,
+    });
+    // Add audit entry
+    const auditEntry = createAuditEntry(context.id, AuditAction.CREATE, 'snapshot', snapshot.id, AgentRole.EXECUTOR, [{ field: 'snapshot', oldValue: null, newValue: snapshot.name }]);
+    await advanced.audit.addEntry(auditEntry);
+    return success(`Snapshot created: ${snapshot.name} (ID: ${snapshot.id})
+Project: ${context.name}
+Version: ${snapshot.version}`);
+}
+async function handleListSnapshots(args) {
+    const storage = await getStorage();
+    const advanced = await getAdvancedStorage();
+    const projectId = args.project_id;
+    let targetProjectId;
+    if (projectId) {
+        targetProjectId = projectId;
+    }
+    else {
+        const active = await storage.getActiveProject();
+        targetProjectId = active?.id;
+    }
+    if (!targetProjectId) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const snapshots = await advanced.snapshots.listSnapshots(targetProjectId);
+    if (snapshots.length === 0) {
+        return success('No snapshots found for this project.');
+    }
+    const list = snapshots
+        .map((s) => {
+        return `[${s.id}] ${s.name}
+  Version: ${s.version}
+  Created: ${s.createdAt}
+  ${s.description || '(no description)'}`;
+    })
+        .join('\n\n');
+    return success(`Snapshots:\n\n${list}`);
+}
+async function handleRestoreSnapshot(args) {
+    const storage = await getStorage();
+    const advanced = await getAdvancedStorage();
+    const snapshotId = args.snapshot_id;
+    const snapshot = await advanced.snapshots.getSnapshot(snapshotId);
+    if (!snapshot) {
+        return error(`Snapshot not found: ${snapshotId}`);
+    }
+    // Create a backup snapshot before restoring
+    const currentProject = await storage.loadProject(snapshot.projectId);
+    if (currentProject) {
+        const backupSnapshot = createSnapshot(currentProject, `Auto-backup before restore to "${snapshot.name}"`, 'Automatic backup created before snapshot restore', 'system');
+        await advanced.snapshots.saveSnapshot(backupSnapshot);
+    }
+    // Restore the project
+    const restored = restoreFromSnapshot(snapshot);
+    await storage.saveProject(restored);
+    // Add audit entry
+    const auditEntry = createAuditEntry(snapshot.projectId, AuditAction.RESTORE, 'snapshot', snapshot.id, AgentRole.EXECUTOR, [{ field: 'project', oldValue: currentProject?.version, newValue: snapshot.version }]);
+    await advanced.audit.addEntry(auditEntry);
+    return success(`Project restored from snapshot: ${snapshot.name}
+Project: ${restored.name}
+Restored to version: ${snapshot.version}
+Current version: ${restored.version}
+
+A backup snapshot was created before restoration.`);
+}
+// ============================================================================
+// Audit Handlers
+// ============================================================================
+async function handleGetAuditLog(args) {
+    const storage = await getStorage();
+    const advanced = await getAdvancedStorage();
+    const projectId = args.project_id;
+    const limit = args.limit ?? 50;
+    const since = args.since;
+    let targetProjectId;
+    if (projectId) {
+        targetProjectId = projectId;
+    }
+    else {
+        const active = await storage.getActiveProject();
+        targetProjectId = active?.id;
+    }
+    if (!targetProjectId) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const entries = await advanced.audit.listEntries({
+        projectId: targetProjectId,
+        limit,
+        since,
+    });
+    if (entries.length === 0) {
+        return success('No audit entries found.');
+    }
+    const list = entries
+        .map((e) => {
+        const changes = e.changes.map((c) => `${c.field}: ${c.oldValue} → ${c.newValue}`).join(', ');
+        return `[${e.timestamp}] ${e.action.toUpperCase()} ${e.entityType}
+  Agent: ${e.agent}
+  Entity: ${e.entityId}
+  Changes: ${changes || '(none)'}`;
+    })
+        .join('\n\n');
+    return success(`Audit Log (${entries.length} entries):\n\n${list}`);
+}
+// ============================================================================
+// Intelligent Features Handlers
+// ============================================================================
+async function handleGetCriticalPath(args) {
+    const storage = await getStorage();
+    const projectId = args.project_id;
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const analysis = analyzeCriticalPath(context);
+    const criticalPathStr = analysis.criticalPath
+        .map((t, i) => `  ${i + 1}. [${t.status}] ${t.title}`)
+        .join('\n');
+    const parallelGroups = analysis.parallelizableGroups
+        .map((group, i) => `  Group ${i + 1}: ${group.map((t) => t.title).join(', ')}`)
+        .join('\n');
+    const readyStr = analysis.readyTasks.map((t) => `  • ${t.title}`).join('\n');
+    const blockedStr = analysis.blockedTasks.map((t) => `  • ${t.title}`).join('\n');
+    return success(`🔍 Critical Path Analysis
+
+📊 Critical Path (${analysis.criticalPathLength} tasks):
+${criticalPathStr || '  (none - all tasks independent)'}
+
+⚡ Parallelizable Groups:
+${parallelGroups || '  (none found)'}
+
+✅ Ready to Start (${analysis.readyTasks.length}):
+${readyStr || '  (none)'}
+
+🚫 Blocked Tasks (${analysis.blockedTasks.length}):
+${blockedStr || '  (none)'}
+
+📈 Estimated Remaining: ${analysis.estimatedCompletion} tasks`);
+}
+async function handleGetSmartQueue(args) {
+    const storage = await getStorage();
+    const projectId = args.project_id;
+    const limit = args.limit ?? 5;
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const queue = getSmartPriorityQueue(context, limit);
+    if (queue.length === 0) {
+        return success('No tasks available. All tasks are either completed, blocked, or in progress.');
+    }
+    const list = queue
+        .map((t, i) => {
+        const priority = '★'.repeat(6 - t.priority);
+        return `${i + 1}. [P${t.priority}] ${t.title} ${priority}
+     ID: ${t.id}
+     ${t.description.slice(0, 80)}...`;
+    })
+        .join('\n\n');
+    return success(`🎯 Smart Priority Queue (Top ${queue.length})
+
+Recommended execution order:
+
+${list}
+
+These tasks have been prioritized based on:
+• Critical path position
+• Dependency unblocking potential
+• Priority level
+• Task age`);
+}
+async function handleCompressContext(args) {
+    const storage = await getStorage();
+    const projectId = args.project_id;
+    const includeCompleted = args.include_completed ?? false;
+    const maxNotes = args.max_notes ?? 10;
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const compressed = compressContext(context, {
+        includeCompletedTasks: includeCompleted,
+        maxNotes,
+    });
+    const stats = getCompressionStats(context, compressed);
+    return success(`📦 Compressed Context
+
+${JSON.stringify(compressed, null, 2)}
+
+---
+📊 Compression Stats:
+  Original size: ${stats.originalSize} chars
+  Compressed size: ${stats.compressedSize} chars
+  Reduction: ${stats.ratio.toFixed(1)}%
+  Estimated tokens saved: ~${stats.savedTokens}
+
+Use this compressed format for efficient AI-to-AI context transfer.`);
+}
+async function handleGetHealthScore(args) {
+    const storage = await getStorage();
+    const projectId = args.project_id;
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const health = calculateHealthScore(context);
+    const trendIcon = health.trend === 'improving' ? '📈' : health.trend === 'declining' ? '📉' : '➡️';
+    const scoreEmoji = health.overall >= 80 ? '🟢' : health.overall >= 60 ? '🟡' : health.overall >= 40 ? '🟠' : '🔴';
+    const risksStr = health.risks
+        .map((r) => {
+        const icon = r.severity === 'critical' ? '🚨' : r.severity === 'high' ? '⚠️' : 'ℹ️';
+        return `  ${icon} [${r.severity.toUpperCase()}] ${r.description}`;
+    })
+        .join('\n');
+    const recsStr = health.recommendations.map((r) => `  • ${r}`).join('\n');
+    return success(`🏥 Project Health Score
+
+${scoreEmoji} Overall Score: ${health.overall}/100 ${trendIcon} ${health.trend}
+
+📊 Breakdown:
+  Velocity:        ${health.breakdown.velocity}/100
+  Blocker Ratio:   ${health.breakdown.blockerRatio}/100
+  Dependencies:    ${health.breakdown.dependencyHealth}/100
+  Progress Rate:   ${health.breakdown.progressRate}/100
+  Activity:        ${health.breakdown.staleness}/100
+  Documentation:   ${health.breakdown.documentationQuality}/100
+
+⚠️ Risks (${health.risks.length}):
+${risksStr || '  (none detected)'}
+
+💡 Recommendations:
+${recsStr || '  (none)'}`);
+}
+async function handleBatchOperations(args) {
+    const storage = await getStorage();
+    const projectId = args.project_id;
+    const operations = args.operations;
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const result = executeBatchOperations(context, operations);
+    if (result.success) {
+        await storage.saveProject(result.context);
+    }
+    const resultsStr = result.results
+        .map((r) => {
+        const status = r.success ? '✅' : '❌';
+        const extra = r.error ? ` - ${r.error}` : r.result ? ` - ${JSON.stringify(r.result)}` : '';
+        return `  ${status} Operation ${r.index + 1}${extra}`;
+    })
+        .join('\n');
+    const statusEmoji = result.success ? '✅' : '⚠️';
+    return success(`${statusEmoji} Batch Operations Result
+
+Applied: ${result.appliedCount}/${operations.length}
+Failed: ${result.failedCount}
+
+Results:
+${resultsStr}
+
+${result.success ? 'All operations completed successfully.' : 'Some operations failed. Project was NOT saved.'}`);
+}
+async function handleGetSuggestions(args) {
+    const storage = await getStorage();
+    const projectId = args.project_id;
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const suggestions = generateTaskSuggestions(context);
+    if (suggestions.length === 0) {
+        return success('🎉 No suggestions - project looks healthy!');
+    }
+    const priorityIcon = (p) => (p === 'high' ? '🔴' : p === 'medium' ? '🟡' : '🟢');
+    const list = suggestions
+        .map((s, i) => {
+        const icon = priorityIcon(s.priority);
+        const taskSuggestion = s.suggestedTask
+            ? `\n     Suggested task: "${s.suggestedTask.title}"`
+            : '';
+        return `${i + 1}. ${icon} [${s.priority.toUpperCase()}] ${s.title}
+     Type: ${s.type}
+     ${s.description}${taskSuggestion}`;
+    })
+        .join('\n\n');
+    return success(`💡 Intelligent Suggestions (${suggestions.length})
+
+${list}
+
+These suggestions are based on:
+• Dependency analysis
+• Project health metrics
+• Phase progression patterns
+• Documentation completeness`);
+}
+// ============================================================================
+// Productivity Feature Handlers
+// ============================================================================
+async function handleAddPersonalTodo(args) {
+    const content = args.content;
+    const priority = args.priority;
+    const tags = args.tags;
+    const dueDate = args.due_date;
+    const context = args.context;
+    const todo = await addPersonalTodo(content, {
+        priority,
+        tags,
+        dueDate,
+        context,
+    });
+    return success(`✅ Todo added: "${todo.content}"
+ID: ${todo.id}
+Priority: ${todo.priority}
+${tags?.length ? `Tags: ${tags.join(', ')}` : ''}
+${dueDate ? `Due: ${dueDate}` : ''}`);
+}
+async function handleListPersonalTodos(args) {
+    const tag = args.tag;
+    const priority = args.priority;
+    const todos = await listPersonalTodos({ tag, priority });
+    if (todos.length === 0) {
+        return success('📋 No personal todos. Add one with add_personal_todo!');
+    }
+    const list = todos
+        .map((t) => {
+        const priorityIcon = '⚡'.repeat(6 - t.priority);
+        const tagStr = t.tags.length ? ` [${t.tags.join(', ')}]` : '';
+        const dueStr = t.dueDate ? ` 📅 ${t.dueDate.split('T')[0]}` : '';
+        return `${priorityIcon} ${t.content}${tagStr}${dueStr}\n   ID: ${t.id}`;
+    })
+        .join('\n\n');
+    return success(`📋 Personal Todos (${todos.length})
+
+${list}`);
+}
+async function handleCompletePersonalTodo(args) {
+    const todoId = args.todo_id;
+    const reflection = args.reflection;
+    const duration = args.duration;
+    const did = await completeTodo(todoId, { reflection, duration });
+    if (!did) {
+        return error(`Todo not found: ${todoId}`);
+    }
+    return success(`✅ Completed: "${did.content}"
+
+Moved to "did" list.
+${duration ? `Time spent: ${duration} minutes` : ''}
+${reflection ? `Reflection: ${reflection}` : ''}
+
+Use list_dids to see your accomplishments!`);
+}
+async function handleListDids(args) {
+    const limit = args.limit ?? 20;
+    const since = args.since;
+    const tag = args.tag;
+    const dids = await listDids({ limit, since, tag });
+    if (dids.length === 0) {
+        return success('📝 No completed items yet. Complete a todo to see it here!');
+    }
+    const list = dids
+        .map((d) => {
+        const durationStr = d.duration ? ` (${d.duration}min)` : '';
+        const tagStr = d.tags.length ? ` [${d.tags.join(', ')}]` : '';
+        const date = d.completedAt.split('T')[0];
+        return `✓ ${d.content}${tagStr}${durationStr}\n  Completed: ${date}${d.reflection ? `\n  Insight: ${d.reflection}` : ''}`;
+    })
+        .join('\n\n');
+    return success(`📝 Did List (${dids.length} items)
+
+${list}`);
+}
+async function handleSetGoals(args) {
+    const daily = args.daily;
+    const weekly = args.weekly;
+    if (daily) {
+        await setDailyGoals(daily);
+    }
+    if (weekly) {
+        await setWeeklyGoals(weekly);
+    }
+    const goals = await getGoals();
+    return success(`🎯 Goals Updated
+
+Daily Goals:
+${goals.daily.map((g) => `  • ${g}`).join('\n') || '  (none set)'}
+
+Weekly Goals:
+${goals.weekly.map((g) => `  • ${g}`).join('\n') || '  (none set)'}`);
+}
+async function handleGetGoals() {
+    const goals = await getGoals();
+    return success(`🎯 Current Goals
+
+Daily Goals:
+${goals.daily.map((g) => `  • ${g}`).join('\n') || '  (none set)'}
+
+Weekly Goals:
+${goals.weekly.map((g) => `  • ${g}`).join('\n') || '  (none set)'}`);
+}
+async function handleRemember(args) {
+    const key = args.key;
+    const value = args.value;
+    const category = args.category;
+    const expiresIn = args.expires_in;
+    const projectId = args.project_id;
+    const memory = await remember(key, value, {
+        category,
+        expiresIn,
+        projectId,
+    });
+    return success(`🧠 Remembered: "${key}"
+Category: ${memory.category}
+${memory.expiresAt ? `Expires: ${memory.expiresAt}` : 'Never expires'}
+${memory.projectId ? `Project: ${memory.projectId}` : ''}
+
+Use recall("${key}") to retrieve this later.`);
+}
+async function handleRecall(args) {
+    const key = args.key;
+    const value = await recall(key);
+    if (value === null) {
+        return error(`No memory found for key: "${key}"`);
+    }
+    return success(`🧠 Recalled "${key}":
+
+${value}`);
+}
+async function handleListMemories(args) {
+    const category = args.category;
+    const projectId = args.project_id;
+    const memories = await listMemories({ category, projectId });
+    if (memories.length === 0) {
+        return success('🧠 No memories stored. Use remember() to store information.');
+    }
+    const categoryIcon = (c) => {
+        switch (c) {
+            case 'preference': return '⚙️';
+            case 'decision': return '🎯';
+            case 'context': return '📌';
+            case 'learning': return '💡';
+            case 'reminder': return '⏰';
+            default: return '📝';
+        }
+    };
+    const list = memories
+        .map((m) => `${categoryIcon(m.category)} ${m.key}: ${m.value.substring(0, 50)}${m.value.length > 50 ? '...' : ''}`)
+        .join('\n');
+    return success(`🧠 Stored Memories (${memories.length})
+
+${list}`);
+}
+async function handleForget(args) {
+    const key = args.key;
+    const forgotten = await forget(key);
+    if (!forgotten) {
+        return error(`No memory found for key: "${key}"`);
+    }
+    return success(`🧠 Forgotten: "${key}"`);
+}
+async function handleStartTimeTracking(args) {
+    const taskId = args.task_id;
+    const projectId = args.project_id;
+    const notes = args.notes;
+    const entry = await startTimeTracking(taskId, projectId, notes);
+    return success(`⏱️ Time tracking started
+Task: ${entry.taskId}
+Project: ${entry.projectId}
+Started: ${entry.startedAt}
+${notes ? `Notes: ${notes}` : ''}
+
+Use stop_time_tracking when done.`);
+}
+async function handleStopTimeTracking(args) {
+    const notes = args.notes;
+    const entry = await stopTimeTracking(notes);
+    if (!entry) {
+        return error('No active time tracking to stop.');
+    }
+    return success(`⏱️ Time tracking stopped
+Task: ${entry.taskId}
+Duration: ${entry.duration} minutes
+${entry.notes ? `Notes: ${entry.notes}` : ''}`);
+}
+async function handleGetTimeStats(args) {
+    const projectId = args.project_id;
+    const stats = await getTimeStats(projectId);
+    const taskBreakdown = Object.entries(stats.taskBreakdown)
+        .map(([taskId, minutes]) => `  ${taskId}: ${minutes}min`)
+        .join('\n') || '  (no data)';
+    return success(`⏱️ Time Statistics for ${projectId}
+
+Total Time: ${stats.totalMinutes} minutes (${(stats.totalMinutes / 60).toFixed(1)} hours)
+Average Session: ${stats.averageSessionLength} minutes
+Longest Session: ${stats.longestSession} minutes
+
+By Task:
+${taskBreakdown}`);
+}
+async function handleListPromptTemplates(args) {
+    const category = args.category;
+    const templates = listPromptTemplates(category);
+    const list = templates
+        .map((t) => `📝 ${t.name} (${t.id})
+   Category: ${t.category}
+   ${t.description}`)
+        .join('\n\n');
+    return success(`📚 Prompt Templates (${templates.length})
+
+${list}
+
+Use generate_prompt with template_id to fill a template with project context.`);
+}
+async function handleGeneratePrompt(args) {
+    const storage = await getStorage();
+    const templateId = args.template_id;
+    const projectId = args.project_id;
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const prompt = generatePromptFromContext(context, templateId);
+    if (!prompt) {
+        return error(`Template not found: ${templateId}`);
+    }
+    return success(`📝 Generated Prompt
+
+${prompt}`);
+}
+async function handleExportMd(args) {
+    const storage = await getStorage();
+    const projectId = args.project_id;
+    const format = args.format ?? 'standard';
+    const savePath = args.save_path;
+    const target = args.target ?? 'claude';
+    let context;
+    if (projectId) {
+        context = await storage.loadProject(projectId);
+    }
+    else {
+        context = await storage.getActiveProject();
+    }
+    if (!context) {
+        return error('No project found. Create one with write_context or set an active project.');
+    }
+    const exported = generateClaudeMd(context, format);
+    // Add target-specific header
+    let content = exported.content;
+    if (target !== 'claude') {
+        const targetHeaders = {
+            gemini: '<!-- For Google Gemini AI -->\n',
+            chatgpt: '<!-- For OpenAI ChatGPT -->\n',
+            cursor: '<!-- For Cursor AI -->\n',
+            copilot: '<!-- For GitHub Copilot -->\n',
+        };
+        content = (targetHeaders[target.toLowerCase()] ?? '') + content;
+    }
+    if (savePath) {
+        await saveClaudeMd(context, savePath, format);
+        return success(`📄 Exported to: ${savePath}
+
+Format: ${format}
+Target: ${target.toUpperCase()}
+
+This file can be placed in your project root for automatic context loading.`);
+    }
+    return success(`📄 Export Preview (${format} format, for ${target.toUpperCase()})
+
+${content}`);
+}
+async function handleGetDailyDigest(args) {
+    const projectId = args.project_id;
+    const digest = await getDailyDigest(projectId);
+    const deadlines = digest.upcomingDeadlines
+        .map((t) => `  📅 ${t.dueDate?.split('T')[0]}: ${t.content}`)
+        .join('\n') || '  (none)';
+    const completions = digest.recentCompletions
+        .map((d) => `  ✓ ${d.content}`)
+        .join('\n') || '  (none today)';
+    return success(`📊 Daily Digest - ${digest.date}
+
+📋 Todos: ${digest.todosCount} pending
+✅ Done Today: ${digest.didsCount}
+⏱️ Time Tracked: ${digest.timeTracked} minutes
+
+📅 Upcoming Deadlines:
+${deadlines}
+
+✅ Recent Completions:
+${completions}
+
+🎯 Daily Goals:
+${digest.goals.daily.map((g) => `  • ${g}`).join('\n') || '  (none set)'}
+
+⏰ Reminders:
+${digest.memories.map((m) => `  • ${m.value}`).join('\n') || '  (none)'}`);
+}
+async function handleGetProductivityStats(args) {
+    const period = args.period ?? 'week';
+    const stats = await getProductivityStats(period);
+    const topTags = stats.topTags
+        .map((t) => `  ${t.tag}: ${t.count}`)
+        .join('\n') || '  (no tags)';
+    return success(`📈 Productivity Stats (${period})
+
+✅ Tasks Completed: ${stats.tasksCompleted}
+⏱️ Avg Completion Time: ${stats.averageCompletionTime} minutes
+🔥 Streak: ${stats.streakDays} days
+⏰ Total Time Tracked: ${stats.totalTimeTracked} minutes
+
+🏷️ Top Tags:
+${topTags}`);
+}
 // ============================================================================
 // Server Setup
 // ============================================================================
@@ -505,6 +2192,89 @@ export async function createServer() {
                     return await handleSetActiveProject(args ?? {});
                 case 'delete_project':
                     return await handleDeleteProject(args ?? {});
+                case 'get_analytics':
+                    return await handleGetAnalytics(args ?? {});
+                case 'export_project':
+                    return await handleExportProject(args ?? {});
+                case 'clone_project':
+                    return await handleCloneProject(args ?? {});
+                // Webhook tools
+                case 'register_webhook':
+                    return await handleRegisterWebhook(args ?? {});
+                case 'list_webhooks':
+                    return await handleListWebhooks();
+                case 'delete_webhook':
+                    return await handleDeleteWebhook(args ?? {});
+                // Template tools
+                case 'list_templates':
+                    return await handleListTemplates(args ?? {});
+                case 'create_from_template':
+                    return await handleCreateFromTemplate(args ?? {});
+                // Snapshot tools
+                case 'create_snapshot':
+                    return await handleCreateSnapshot(args ?? {});
+                case 'list_snapshots':
+                    return await handleListSnapshots(args ?? {});
+                case 'restore_snapshot':
+                    return await handleRestoreSnapshot(args ?? {});
+                // Audit tools
+                case 'get_audit_log':
+                    return await handleGetAuditLog(args ?? {});
+                // Intelligent features
+                case 'get_critical_path':
+                    return await handleGetCriticalPath(args ?? {});
+                case 'get_smart_queue':
+                    return await handleGetSmartQueue(args ?? {});
+                case 'compress_context':
+                    return await handleCompressContext(args ?? {});
+                case 'get_health_score':
+                    return await handleGetHealthScore(args ?? {});
+                case 'batch_operations':
+                    return await handleBatchOperations(args ?? {});
+                case 'get_suggestions':
+                    return await handleGetSuggestions(args ?? {});
+                // Productivity features
+                case 'add_personal_todo':
+                    return await handleAddPersonalTodo(args ?? {});
+                case 'list_personal_todos':
+                    return await handleListPersonalTodos(args ?? {});
+                case 'complete_personal_todo':
+                    return await handleCompletePersonalTodo(args ?? {});
+                case 'list_dids':
+                    return await handleListDids(args ?? {});
+                case 'set_goals':
+                    return await handleSetGoals(args ?? {});
+                case 'get_goals':
+                    return await handleGetGoals();
+                // Session memory
+                case 'remember':
+                    return await handleRemember(args ?? {});
+                case 'recall':
+                    return await handleRecall(args ?? {});
+                case 'list_memories':
+                    return await handleListMemories(args ?? {});
+                case 'forget':
+                    return await handleForget(args ?? {});
+                // Time tracking
+                case 'start_time_tracking':
+                    return await handleStartTimeTracking(args ?? {});
+                case 'stop_time_tracking':
+                    return await handleStopTimeTracking(args ?? {});
+                case 'get_time_stats':
+                    return await handleGetTimeStats(args ?? {});
+                // Prompt templates
+                case 'list_prompt_templates':
+                    return await handleListPromptTemplates(args ?? {});
+                case 'generate_prompt':
+                    return await handleGeneratePrompt(args ?? {});
+                // Export
+                case 'export_claude_md':
+                    return await handleExportMd(args ?? {});
+                // Productivity dashboard
+                case 'get_daily_digest':
+                    return await handleGetDailyDigest(args ?? {});
+                case 'get_productivity_stats':
+                    return await handleGetProductivityStats(args ?? {});
                 default:
                     return error(`Unknown tool: ${name}`);
             }

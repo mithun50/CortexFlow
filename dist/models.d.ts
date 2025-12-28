@@ -20,7 +20,29 @@ export declare enum TaskStatus {
 export declare enum AgentRole {
     PLANNER = "planner",// ChatGPT - ideation, design
     EXECUTOR = "executor",// Claude - implementation
-    REVIEWER = "reviewer"
+    REVIEWER = "reviewer",// Either AI - validation
+    TESTER = "tester",// Testing agent
+    DOCUMENTER = "documenter",// Documentation agent
+    SECURITY = "security"
+}
+export declare enum EventType {
+    PROJECT_CREATED = "project.created",
+    PROJECT_UPDATED = "project.updated",
+    PROJECT_DELETED = "project.deleted",
+    PHASE_CHANGED = "phase.changed",
+    TASK_CREATED = "task.created",
+    TASK_UPDATED = "task.updated",
+    TASK_COMPLETED = "task.completed",
+    TASK_BLOCKED = "task.blocked",
+    NOTE_ADDED = "note.added",
+    BLOCKER_ADDED = "blocker.added",
+    SNAPSHOT_CREATED = "snapshot.created"
+}
+export declare enum AuditAction {
+    CREATE = "create",
+    UPDATE = "update",
+    DELETE = "delete",
+    RESTORE = "restore"
 }
 export interface Task {
     id: string;
@@ -55,9 +77,73 @@ export interface ProjectContext {
     tags: string[];
     config: Record<string, unknown>;
 }
+export interface Webhook {
+    id: string;
+    url: string;
+    events: EventType[];
+    secret?: string;
+    active: boolean;
+    createdAt: string;
+    lastTriggeredAt: string | null;
+    failureCount: number;
+}
+export interface ProjectTemplate {
+    id: string;
+    name: string;
+    description: string;
+    category: string;
+    tasks: Array<{
+        title: string;
+        description: string;
+        priority: number;
+        dependencies: string[];
+    }>;
+    defaultPhase: Phase;
+    tags: string[];
+    createdAt: string;
+    usageCount: number;
+}
+export interface ProjectSnapshot {
+    id: string;
+    projectId: string;
+    version: number;
+    name: string;
+    description: string;
+    data: ProjectContext;
+    createdAt: string;
+    createdBy: AgentRole | 'system';
+}
+export interface AuditEntry {
+    id: string;
+    projectId: string;
+    action: AuditAction;
+    entityType: 'project' | 'task' | 'note' | 'phase' | 'snapshot' | 'webhook';
+    entityId: string;
+    agent: AgentRole | 'system' | 'http';
+    timestamp: string;
+    changes: {
+        field: string;
+        oldValue: unknown;
+        newValue: unknown;
+    }[];
+    metadata?: Record<string, unknown>;
+}
+export interface WebhookEvent {
+    id: string;
+    type: EventType;
+    projectId: string;
+    timestamp: string;
+    data: Record<string, unknown>;
+}
 export declare function createTask(title: string, description: string, options?: Partial<Omit<Task, 'id' | 'title' | 'description' | 'createdAt' | 'updatedAt'>>): Task;
 export declare function createNote(agent: AgentRole, content: string, category?: AgentNote['category']): AgentNote;
 export declare function createProject(name: string, description: string, options?: Partial<Omit<ProjectContext, 'id' | 'name' | 'description' | 'createdAt' | 'updatedAt'>>): ProjectContext;
+export declare function createWebhook(url: string, events: EventType[], options?: Partial<Omit<Webhook, 'id' | 'url' | 'events' | 'createdAt'>>): Webhook;
+export declare function createTemplate(name: string, description: string, tasks: ProjectTemplate['tasks'], options?: Partial<Omit<ProjectTemplate, 'id' | 'name' | 'description' | 'tasks' | 'createdAt'>>): ProjectTemplate;
+export declare function createSnapshot(project: ProjectContext, name: string, description: string, createdBy?: AgentRole | 'system'): ProjectSnapshot;
+export declare function createAuditEntry(projectId: string, action: AuditAction, entityType: AuditEntry['entityType'], entityId: string, agent: AuditEntry['agent'], changes: AuditEntry['changes'], metadata?: Record<string, unknown>): AuditEntry;
+export declare function createWebhookEvent(type: EventType, projectId: string, data: Record<string, unknown>): WebhookEvent;
+export declare const BUILT_IN_TEMPLATES: ProjectTemplate[];
 export declare function bumpVersion(context: ProjectContext): ProjectContext;
 export declare function addTask(context: ProjectContext, title: string, description: string, options?: Partial<Omit<Task, 'id' | 'title' | 'description' | 'createdAt' | 'updatedAt'>>): {
     context: ProjectContext;
@@ -73,6 +159,59 @@ export declare function setPhase(context: ProjectContext, phase: Phase): Project
 export declare function getTask(context: ProjectContext, taskId: string): Task | undefined;
 export declare function getPendingTasks(context: ProjectContext): Task[];
 export declare function getProjectSummary(context: ProjectContext): string;
+export interface AgentStats {
+    agent: AgentRole;
+    tasksCompleted: number;
+    tasksInProgress: number;
+    notesAdded: number;
+    avgCompletionTime: number | null;
+}
+export interface ProjectAnalytics {
+    projectId: string;
+    projectName: string;
+    totalTasks: number;
+    completedTasks: number;
+    pendingTasks: number;
+    blockedTasks: number;
+    completionRate: number;
+    agentStats: AgentStats[];
+    phaseHistory: {
+        phase: Phase;
+        timestamp: string;
+    }[];
+    avgTaskDuration: number | null;
+    blockerCount: number;
+    decisionCount: number;
+}
+export declare function getProjectAnalytics(context: ProjectContext): ProjectAnalytics;
+export declare function exportToMarkdown(context: ProjectContext): string;
+export declare function cloneProject(context: ProjectContext, newName: string, options?: {
+    resetTasks?: boolean;
+    resetNotes?: boolean;
+}): ProjectContext;
 export declare function serializeContext(context: ProjectContext): string;
 export declare function deserializeContext(json: string): ProjectContext;
+export declare function createProjectFromTemplate(template: ProjectTemplate, projectName: string, projectDescription?: string): ProjectContext;
+export declare function getTemplateById(templateId: string): ProjectTemplate | undefined;
+export declare function getTemplatesByCategory(category: string): ProjectTemplate[];
+export declare function restoreFromSnapshot(snapshot: ProjectSnapshot): ProjectContext;
+export declare function compareSnapshots(older: ProjectSnapshot, newer: ProjectSnapshot): {
+    tasksAdded: Task[];
+    tasksRemoved: Task[];
+    tasksModified: Array<{
+        taskId: string;
+        changes: string[];
+    }>;
+    notesAdded: number;
+    phaseChanged: boolean;
+};
+export declare function filterAuditLog(entries: AuditEntry[], options: {
+    projectId?: string;
+    action?: AuditAction;
+    entityType?: AuditEntry['entityType'];
+    agent?: AuditEntry['agent'];
+    since?: string;
+    until?: string;
+    limit?: number;
+}): AuditEntry[];
 //# sourceMappingURL=models.d.ts.map
