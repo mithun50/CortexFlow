@@ -21,6 +21,27 @@
 
 **Universal MCP Server for AI-to-AI Task Continuation**
 
+## 📊 Benchmark Results
+
+<!-- BENCHMARK_RESULTS_START -->
+<details>
+<summary><b>Performance Metrics</b> (click to expand)</summary>
+
+> _Results auto-updated by CI workflow_
+
+### Summary
+
+| Metric                | Value       |
+| --------------------- | ----------- |
+| Avg Token Savings     | **56%**     |
+| Avg Compression Ratio | **5.2x**    |
+| Peak Memory           | **< 90 MB** |
+
+[📈 View Full Benchmark Report](benchmarks/results/BENCHMARK.md)
+
+</details>
+<!-- BENCHMARK_RESULTS_END -->
+
 CortexFlow is an MCP (Model Context Protocol) server that enables seamless handoff between AI agents. When you finish planning with ChatGPT, Claude Code can read the context and continue execution - without re-explaining the project.
 
 ## The Problem

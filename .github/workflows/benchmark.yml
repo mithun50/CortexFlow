@@ -39,19 +39,60 @@ jobs:
           name: benchmark-results
           path: benchmarks/results/
 
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
+      - name: Update README with benchmark results
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        with:
-          name: CortexFlow Benchmarks
-          tool: 'customSmallerIsBetter'
-          output-file-path: benchmarks/results/report.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
-          alert-threshold: '150%'
-          comment-on-alert: true
-          fail-on-alert: false
-          benchmark-data-dir-path: 'benchmarks/data'
+        run: |
+          # Read the benchmark report
+          REPORT=$(cat benchmarks/results/report.json)
+
+          # Extract values using node
+          node -e "
+          const report = JSON.parse(\`$REPORT\`);
+          const s = report.summary;
+
+          const content = \`<!-- BENCHMARK_RESULTS_START -->
+          <details>
+          <summary><b>Performance Metrics</b> (click to expand)</summary>
+
+          > _Last updated: \${new Date().toISOString().split('T')[0]}_
+
+          ### Summary
+
+          | Metric | Value |
+          |--------|-------|
+          | Avg Token Savings | **\${s.avgTokenSavings.toFixed(0)}%** |
+          | Avg Compression Ratio | **\${s.avgCompressionRatio.toFixed(1)}x** |
+          | Peak Memory | **\${s.peakMemoryMB.toFixed(0)} MB** |
+          | Avg Ops/Second | **\${(s.avgOpsPerSecond/1000).toFixed(1)}K** |
+
+          [📈 View Full Benchmark Report](benchmarks/results/BENCHMARK.md)
+
+          </details>
+          <!-- BENCHMARK_RESULTS_END -->\`;
+
+          console.log(content);
+          " > /tmp/bench_section.txt
+
+          # Update README between markers
+          sed -i '/<!-- BENCHMARK_RESULTS_START -->/,/<!-- BENCHMARK_RESULTS_END -->/{
+            /<!-- BENCHMARK_RESULTS_START -->/{
+              r /tmp/bench_section.txt
+              d
+            }
+            /<!-- BENCHMARK_RESULTS_END -->/!d
+          }' README.md
+
+      - name: Commit updated results
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git
+          git add benchmarks/results/ README.md
+          git diff --staged --quiet || git commit -m "ci: update benchmark results [skip ci]"
+          git push
 
       - name: Comment benchmark results on PR
         if: github.event_name == 'pull_request'
