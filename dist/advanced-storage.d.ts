@@ -5,6 +5,7 @@
  * Extends the base storage with advanced features.
  */
 import { Webhook, ProjectSnapshot, ProjectTemplate, AuditEntry, WebhookEvent, EventType } from './models.js';
+import { RAGStorage } from './rag/rag-storage.js';
 export interface WebhookStorage {
     listWebhooks(): Promise<Webhook[]>;
     getWebhook(id: string): Promise<Webhook | null>;
@@ -50,6 +51,7 @@ export interface AdvancedStorage {
     templates: TemplateStorage;
     audit: AuditStorage;
     events: EventDispatcher;
+    rag: RAGStorage;
 }
 export declare function getAdvancedStorage(): Promise<AdvancedStorage>;
 //# sourceMappingURL=advanced-storage.d.ts.map

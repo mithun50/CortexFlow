@@ -1015,3 +1015,186 @@ export function filterAuditLog(
 
   return filtered;
 }
+
+// ============================================================================
+// RAG Types
+// ============================================================================
+
+export type RAGSourceType = 'project_context' | 'task' | 'note' | 'custom_document';
+
+export type EmbeddingProvider = 'local' | 'openai' | 'voyage' | 'cohere' | 'custom';
+
+export type ChunkingStrategy = 'fixed' | 'sentence' | 'paragraph' | 'semantic';
+
+export type RAGSearchType = 'vector' | 'keyword' | 'hybrid';
+
+export interface RAGDocument {
+  id: string;
+  projectId: string | null;
+  sourceType: RAGSourceType;
+  sourceId: string | null;
+  title: string;
+  content: string;
+  metadata: Record<string, unknown>;
+  chunkCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RAGChunk {
+  id: string;
+  documentId: string;
+  content: string;
+  embedding: number[] | null;
+  chunkIndex: number;
+  startOffset: number;
+  endOffset: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface RAGSearchResult {
+  chunk: RAGChunk;
+  document: RAGDocument;
+  score: number;
+  highlights: string[];
+}
+
+export interface RAGQueryResult {
+  query: string;
+  results: RAGSearchResult[];
+  totalFound: number;
+  searchTimeMs: number;
+  embeddingProvider: string;
+}
+
+export interface EmbeddingConfig {
+  provider: EmbeddingProvider;
+  model: string;
+  dimensions: number;
+  apiKey?: string;
+  apiEndpoint?: string;
+  batchSize: number;
+}
+
+export interface ChunkingConfig {
+  strategy: ChunkingStrategy;
+  chunkSize: number;
+  chunkOverlap: number;
+  minChunkSize: number;
+  maxChunkSize: number;
+}
+
+export interface RAGSearchConfig {
+  topK: number;
+  minScore: number;
+  rerank: boolean;
+  hybridVectorWeight: number;
+}
+
+export interface RAGIndexingConfig {
+  autoIndex: boolean;
+  indexOnCreate: boolean;
+  batchSize: number;
+}
+
+export interface RAGConfig {
+  embedding: EmbeddingConfig;
+  chunking: ChunkingConfig;
+  search: RAGSearchConfig;
+  indexing: RAGIndexingConfig;
+}
+
+export interface RAGStats {
+  totalDocuments: number;
+  totalChunks: number;
+  indexedChunks: number;
+  projectBreakdown: Record<string, number>;
+  embeddingProvider: string;
+  embeddingDimensions: number;
+}
+
+/**
+ * Deep partial type for RAG configuration updates.
+ * Allows partial updates to nested configuration objects.
+ */
+export interface RAGConfigUpdate {
+  embedding?: Partial<EmbeddingConfig>;
+  chunking?: Partial<ChunkingConfig>;
+  search?: Partial<RAGSearchConfig>;
+  indexing?: Partial<RAGIndexingConfig>;
+}
+
+// ============================================================================
+// RAG Factory Functions
+// ============================================================================
+
+export function createRAGDocument(
+  title: string,
+  content: string,
+  options: Partial<Omit<RAGDocument, 'id' | 'title' | 'content' | 'createdAt' | 'updatedAt'>> = {}
+): RAGDocument {
+  const now = new Date().toISOString();
+  return {
+    id: randomUUID().slice(0, 8),
+    projectId: options.projectId ?? null,
+    sourceType: options.sourceType ?? 'custom_document',
+    sourceId: options.sourceId ?? null,
+    title,
+    content,
+    metadata: options.metadata ?? {},
+    chunkCount: options.chunkCount ?? 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export function createRAGChunk(
+  documentId: string,
+  content: string,
+  chunkIndex: number,
+  options: Partial<
+    Omit<RAGChunk, 'id' | 'documentId' | 'content' | 'chunkIndex' | 'createdAt'>
+  > = {}
+): RAGChunk {
+  return {
+    id: randomUUID().slice(0, 8),
+    documentId,
+    content,
+    embedding: options.embedding ?? null,
+    chunkIndex,
+    startOffset: options.startOffset ?? 0,
+    endOffset: options.endOffset ?? content.length,
+    metadata: options.metadata ?? {},
+    createdAt: new Date().toISOString(),
+  };
+}
+
+export function getDefaultRAGConfig(): RAGConfig {
+  return {
+    embedding: {
+      provider: 'local',
+      model: 'Xenova/all-MiniLM-L6-v2',
+      dimensions: 384,
+      batchSize: 32,
+    },
+    chunking: {
+      strategy: 'paragraph',
+      chunkSize: 512,
+      chunkOverlap: 50,
+      minChunkSize: 100,
+      maxChunkSize: 2000,
+    },
+    search: {
+      topK: 10,
+      minScore: 0.5,
+      rerank: false,
+      hybridVectorWeight: 0.7,
+    },
+    indexing: {
+      autoIndex: true,
+      indexOnCreate: true,
+      batchSize: 100,
+    },
+  };
+}

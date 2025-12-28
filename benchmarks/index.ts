@@ -1079,6 +1079,223 @@ ${report.memoryResults.map((r) => `| ${r.name} | ${formatBytes(r.heapUsedDelta)}
 }
 
 // ============================================================================
+// RAG Benchmarks
+// ============================================================================
+
+async function runRAGBenchmarks(): Promise<{
+  results: BenchmarkResult[];
+  efficiency: EfficiencyResult[];
+}> {
+  const results: BenchmarkResult[] = [];
+  const efficiency: EfficiencyResult[] = [];
+
+  // Import chunking module (doesn't require SQLite)
+  const chunking = await import('../dist/rag/chunking.js');
+
+  // Test text for chunking benchmarks
+  const testTexts = {
+    small: 'Hello world. This is a test. Multiple sentences here.',
+    medium: `# Introduction
+
+This is a medium-sized document with multiple paragraphs.
+
+## Section One
+
+Content for section one with some detailed information about the topic.
+This paragraph continues with more details and examples.
+
+## Section Two
+
+Another section with different content. This helps test semantic chunking.
+More text follows to fill out the document.
+
+## Conclusion
+
+Final thoughts and summary of the document.`,
+    large: `# Comprehensive Technical Documentation
+
+## Overview
+
+This is a large document used for benchmarking the RAG chunking system.
+It contains multiple sections, code examples, and varied content types.
+
+${Array.from({ length: 20 }, (_, i) => `
+### Section ${i + 1}
+
+This is section ${i + 1} of the documentation. It contains important information
+about feature ${i + 1} and how it integrates with the rest of the system.
+
+Key points for this section:
+- Point one with detailed explanation
+- Point two with examples
+- Point three with considerations
+
+\`\`\`typescript
+function feature${i + 1}() {
+  console.log('Implementing feature ${i + 1}');
+  return { success: true, id: ${i + 1} };
+}
+\`\`\`
+
+Additional notes and considerations for implementation follow here.
+`).join('\n')}
+
+## Final Summary
+
+This concludes the comprehensive documentation.`,
+  };
+
+  const chunkConfigs = [
+    { name: 'Paragraph', strategy: 'paragraph' as const },
+    { name: 'Sentence', strategy: 'sentence' as const },
+    { name: 'Fixed', strategy: 'fixed' as const },
+    { name: 'Semantic', strategy: 'semantic' as const },
+  ];
+
+  // Chunking benchmarks for each strategy
+  for (const config of chunkConfigs) {
+    const chunkConfig = {
+      strategy: config.strategy,
+      chunkSize: 500,
+      chunkOverlap: 50,
+      minChunkSize: 50,
+      maxChunkSize: 2000,
+    };
+
+    // Small text
+    results.push(
+      await runBenchmark(
+        `Chunk Small (${config.name})`,
+        'RAG Chunking',
+        () => {
+          chunking.chunkDocument(testTexts.small, chunkConfig);
+        },
+        1000
+      )
+    );
+
+    // Medium text
+    results.push(
+      await runBenchmark(
+        `Chunk Medium (${config.name})`,
+        'RAG Chunking',
+        () => {
+          chunking.chunkDocument(testTexts.medium, chunkConfig);
+        },
+        500
+      )
+    );
+
+    // Large text
+    results.push(
+      await runBenchmark(
+        `Chunk Large (${config.name})`,
+        'RAG Chunking',
+        () => {
+          chunking.chunkDocument(testTexts.large, chunkConfig);
+        },
+        200
+      )
+    );
+  }
+
+  // Token estimation benchmarks
+  results.push(
+    await runBenchmark(
+      'Estimate Tokens (Small)',
+      'RAG Token Estimation',
+      () => {
+        chunking.estimateTokenCount(testTexts.small);
+      },
+      5000
+    )
+  );
+
+  results.push(
+    await runBenchmark(
+      'Estimate Tokens (Large)',
+      'RAG Token Estimation',
+      () => {
+        chunking.estimateTokenCount(testTexts.large);
+      },
+      1000
+    )
+  );
+
+  // Chunk merging benchmarks
+  const testChunks = Array.from({ length: 50 }, (_, i) => ({
+    content: `Chunk ${i} with some content`,
+    startOffset: i * 30,
+    endOffset: (i + 1) * 30,
+    index: i,
+  }));
+
+  results.push(
+    await runBenchmark(
+      'Merge Small Chunks (50)',
+      'RAG Chunk Processing',
+      () => {
+        chunking.mergeSmallChunks(testChunks, 100);
+      },
+      1000
+    )
+  );
+
+  // Split oversized chunk benchmark
+  const oversizedChunk = {
+    content: 'A'.repeat(5000),
+    startOffset: 0,
+    endOffset: 5000,
+    index: 0,
+  };
+
+  results.push(
+    await runBenchmark(
+      'Split Oversized Chunk',
+      'RAG Chunk Processing',
+      () => {
+        chunking.splitOversizedChunk(oversizedChunk, 500);
+      },
+      1000
+    )
+  );
+
+  // Efficiency metrics for chunking
+  for (const config of chunkConfigs) {
+    const chunkConfig = {
+      strategy: config.strategy,
+      chunkSize: 500,
+      chunkOverlap: 50,
+      minChunkSize: 50,
+      maxChunkSize: 2000,
+    };
+
+    const chunks = chunking.chunkDocument(testTexts.large, chunkConfig);
+    const originalTokens = chunking.estimateTokenCount(testTexts.large);
+    const chunkedTokens = chunks.reduce(
+      (sum, c) => sum + chunking.estimateTokenCount(c.content),
+      0
+    );
+
+    efficiency.push({
+      name: `${config.name} Chunking Overhead`,
+      category: 'RAG Efficiency',
+      originalSize: originalTokens,
+      compressedSize: chunkedTokens,
+      savings: originalTokens - chunkedTokens,
+      savingsPercent: ((originalTokens - chunkedTokens) / originalTokens) * 100,
+      metadata: {
+        chunkCount: chunks.length,
+        avgChunkSize: Math.round(chunkedTokens / chunks.length),
+        strategy: config.strategy,
+      },
+    });
+  }
+
+  return { results, efficiency };
+}
+
+// ============================================================================
 // Main
 // ============================================================================
 
@@ -1097,6 +1314,7 @@ async function main(): Promise<void> {
   const runTokens = args.includes('--tokens') || runAll;
   const runHandoff = args.includes('--handoff') || runAll;
   const runMemory = args.includes('--memory') || runAll;
+  const runRAG = args.includes('--rag') || runAll;
 
   // Storage benchmarks
   if (runStorage) {
@@ -1138,6 +1356,15 @@ async function main(): Promise<void> {
     const memoryResults = await runMemoryBenchmarks();
     allMemory.push(...memoryResults);
     console.log(`   ✓ Completed ${memoryResults.length} memory benchmarks`);
+  }
+
+  // RAG benchmarks
+  if (runRAG) {
+    console.log('🔍 Running RAG Benchmarks...');
+    const { results, efficiency } = await runRAGBenchmarks();
+    allResults.push(...results);
+    allEfficiency.push(...efficiency);
+    console.log(`   ✓ Completed ${results.length} RAG benchmarks`);
   }
 
   // HTTP benchmarks

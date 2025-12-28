@@ -50,6 +50,8 @@ import {
   TaskStatus,
   AgentRole,
   EventType,
+  EmbeddingProvider,
+  ChunkingStrategy,
   createProject,
   addTask,
   addNote,
@@ -67,6 +69,18 @@ import {
   createProjectFromTemplate,
   restoreFromSnapshot,
 } from './models.js';
+import {
+  indexDocument,
+  indexProjectContext,
+  search,
+  buildContextFromSearch,
+  deleteDocument,
+  listDocuments,
+  getRAGStats,
+  getRAGConfig,
+  updateRAGConfig,
+} from './rag/index.js';
+import { resetEmbeddingProvider } from './rag/embeddings.js';
 
 const PORT = parseInt(process.env.CORTEXFLOW_PORT ?? '3210', 10);
 
@@ -1210,6 +1224,245 @@ async function handleProductivityStats(req: IncomingMessage, res: ServerResponse
 }
 
 // ============================================================================
+// RAG Handlers
+// ============================================================================
+
+async function handleRAGDocuments(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+  const parts = url.pathname.split('/');
+
+  // DELETE /api/rag/documents/:id
+  if (parts.length >= 5 && req.method === 'DELETE') {
+    const documentId = parts[4];
+    const deleted = await deleteDocument(documentId);
+    if (deleted) {
+      json(res, { success: true, documentId });
+    } else {
+      error(res, 'Document not found', 404);
+    }
+    return;
+  }
+
+  // GET /api/rag/documents - List documents
+  if (req.method === 'GET') {
+    const projectId = url.searchParams.get('project_id') ?? undefined;
+    const sourceType = url.searchParams.get('source_type') ?? undefined;
+    const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+
+    const docs = await listDocuments({ projectId, sourceType, limit });
+    json(res, { documents: docs, count: docs.length });
+    return;
+  }
+
+  error(res, 'Method not allowed', 405);
+}
+
+async function handleRAGIndex(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+
+  // POST /api/rag/index/document - Index a document
+  if (url.pathname.endsWith('/document') && req.method === 'POST') {
+    const body = await parseBody(req);
+    if (!body.title || !body.content) {
+      error(res, 'title and content are required', 400);
+      return;
+    }
+
+    const doc = await indexDocument(body.title as string, body.content as string, {
+      projectId: body.project_id as string | undefined,
+      sourceType: 'custom_document',
+      metadata: body.metadata as Record<string, unknown> | undefined,
+    });
+
+    json(res, doc, 201);
+    return;
+  }
+
+  // POST /api/rag/index/project - Index a project
+  if (url.pathname.endsWith('/project') && req.method === 'POST') {
+    const body = await parseBody(req);
+    const projectId = body.project_id as string | undefined;
+
+    const storage = await getStorage();
+    let project;
+    if (projectId) {
+      project = await storage.loadProject(projectId);
+    } else {
+      project = await storage.getActiveProject();
+    }
+
+    if (!project) {
+      error(res, 'No project found', 404);
+      return;
+    }
+
+    const result = await indexProjectContext(project);
+    json(
+      res,
+      {
+        project: project.name,
+        projectId: project.id,
+        documentsCreated: result.documents.length,
+        totalChunks: result.totalChunks,
+      },
+      201
+    );
+    return;
+  }
+
+  error(res, 'Method not allowed', 405);
+}
+
+async function handleRAGSearch(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+
+  if (req.method === 'GET' || req.method === 'POST') {
+    let query: string;
+    let projectId: string | undefined;
+    let searchType: 'vector' | 'keyword' | 'hybrid' | undefined;
+    let topK: number | undefined;
+    let minScore: number | undefined;
+
+    if (req.method === 'GET') {
+      query = url.searchParams.get('query') ?? '';
+      projectId = url.searchParams.get('project_id') ?? undefined;
+      searchType = (url.searchParams.get('search_type') as any) ?? undefined;
+      topK = url.searchParams.get('top_k')
+        ? parseInt(url.searchParams.get('top_k')!, 10)
+        : undefined;
+      minScore = url.searchParams.get('min_score')
+        ? parseFloat(url.searchParams.get('min_score')!)
+        : undefined;
+    } else {
+      const body = await parseBody(req);
+      query = body.query as string;
+      projectId = body.project_id as string | undefined;
+      searchType = body.search_type as any;
+      topK = body.top_k as number | undefined;
+      minScore = body.min_score as number | undefined;
+    }
+
+    if (!query) {
+      error(res, 'query is required', 400);
+      return;
+    }
+
+    const result = await search(query, {
+      projectId,
+      searchType,
+      topK,
+      minScore,
+    });
+
+    json(res, result);
+    return;
+  }
+
+  error(res, 'Method not allowed', 405);
+}
+
+async function handleRAGContext(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+
+  if (req.method === 'GET' || req.method === 'POST') {
+    let query: string;
+    let projectId: string | undefined;
+    let maxContextLength: number | undefined;
+    let includeMetadata: boolean | undefined;
+
+    if (req.method === 'GET') {
+      query = url.searchParams.get('query') ?? '';
+      projectId = url.searchParams.get('project_id') ?? undefined;
+      maxContextLength = url.searchParams.get('max_context_length')
+        ? parseInt(url.searchParams.get('max_context_length')!, 10)
+        : undefined;
+      includeMetadata = url.searchParams.get('include_metadata') !== 'false';
+    } else {
+      const body = await parseBody(req);
+      query = body.query as string;
+      projectId = body.project_id as string | undefined;
+      maxContextLength = body.max_context_length as number | undefined;
+      includeMetadata = body.include_metadata as boolean | undefined;
+    }
+
+    if (!query) {
+      error(res, 'query is required', 400);
+      return;
+    }
+
+    const result = await buildContextFromSearch(query, {
+      projectId,
+      maxContextLength,
+      includeMetadata,
+    });
+
+    json(res, result);
+    return;
+  }
+
+  error(res, 'Method not allowed', 405);
+}
+
+async function handleRAGStats(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (req.method === 'GET') {
+    const stats = await getRAGStats();
+    json(res, stats);
+    return;
+  }
+
+  error(res, 'Method not allowed', 405);
+}
+
+async function handleRAGConfig(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (req.method === 'GET') {
+    const config = await getRAGConfig();
+    json(res, config);
+    return;
+  }
+
+  if (req.method === 'PUT' || req.method === 'POST') {
+    const body = await parseBody(req);
+    const updates: Parameters<typeof updateRAGConfig>[0] = {};
+
+    if (body.embedding) {
+      const e = body.embedding as Record<string, unknown>;
+      updates.embedding = {
+        provider: e.provider as EmbeddingProvider | undefined,
+        model: e.model as string | undefined,
+        apiKey: e.api_key as string | undefined,
+        apiEndpoint: e.api_endpoint as string | undefined,
+      };
+      resetEmbeddingProvider();
+    }
+
+    if (body.chunking) {
+      const c = body.chunking as Record<string, unknown>;
+      updates.chunking = {
+        strategy: c.strategy as ChunkingStrategy | undefined,
+        chunkSize: c.chunk_size as number | undefined,
+        chunkOverlap: c.chunk_overlap as number | undefined,
+      };
+    }
+
+    if (body.search) {
+      const s = body.search as Record<string, unknown>;
+      updates.search = {
+        topK: s.top_k as number | undefined,
+        minScore: s.min_score as number | undefined,
+        hybridVectorWeight: s.hybrid_vector_weight as number | undefined,
+      };
+    }
+
+    await updateRAGConfig(updates);
+    const config = await getRAGConfig();
+    json(res, config);
+    return;
+  }
+
+  error(res, 'Method not allowed', 405);
+}
+
+// ============================================================================
 // OpenAPI Spec (for ChatGPT Actions / OpenAI Plugins)
 // ============================================================================
 
@@ -1519,6 +1772,18 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
       await handleDigest(req, res);
     } else if (url.pathname.startsWith('/api/productivity-stats')) {
       await handleProductivityStats(req, res);
+    } else if (url.pathname.startsWith('/api/rag/index')) {
+      await handleRAGIndex(req, res);
+    } else if (url.pathname.startsWith('/api/rag/search')) {
+      await handleRAGSearch(req, res);
+    } else if (url.pathname.startsWith('/api/rag/context')) {
+      await handleRAGContext(req, res);
+    } else if (url.pathname.startsWith('/api/rag/documents')) {
+      await handleRAGDocuments(req, res);
+    } else if (url.pathname.startsWith('/api/rag/stats')) {
+      await handleRAGStats(req, res);
+    } else if (url.pathname.startsWith('/api/rag/config')) {
+      await handleRAGConfig(req, res);
     } else {
       error(res, 'Not found', 404);
     }
@@ -1586,5 +1851,17 @@ export function runHttpServer(): void {
     console.log('  GET  /api/export-md          - Export for AI (claude/gemini/chatgpt)');
     console.log('  GET  /api/digest             - Get daily digest');
     console.log('  GET  /api/productivity-stats - Get productivity stats');
+    console.log('');
+    console.log('RAG (Retrieval-Augmented Generation):');
+    console.log('  POST /api/rag/index/document - Index a document');
+    console.log('  POST /api/rag/index/project  - Index project context');
+    console.log('  GET  /api/rag/search         - Semantic/hybrid search');
+    console.log('  POST /api/rag/search         - Search with body');
+    console.log('  GET  /api/rag/context        - Get context for prompts');
+    console.log('  GET  /api/rag/documents      - List indexed documents');
+    console.log('  DELETE /api/rag/documents/:id- Delete document');
+    console.log('  GET  /api/rag/stats          - Get RAG statistics');
+    console.log('  GET  /api/rag/config         - Get RAG configuration');
+    console.log('  PUT  /api/rag/config         - Update RAG configuration');
   });
 }
