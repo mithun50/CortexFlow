@@ -991,6 +991,29 @@ function generateBadgeJson(report: BenchmarkReport): void {
   // Full report
   writeFileSync(join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
 
+  // GitHub Action benchmark format (array of results)
+  const benchmarkActionFormat = [
+    ...report.results.map((r) => ({
+      name: r.name,
+      unit: 'ms',
+      value: r.avgTime,
+    })),
+    {
+      name: 'Token Savings',
+      unit: '%',
+      value: 100 - report.summary.avgTokenSavings, // Lower is better
+    },
+    {
+      name: 'Memory Usage',
+      unit: 'MB',
+      value: report.summary.peakMemoryMB,
+    },
+  ];
+  writeFileSync(
+    join(outputDir, 'benchmark-action.json'),
+    JSON.stringify(benchmarkActionFormat, null, 2)
+  );
+
   // Markdown summary
   const categories = [...new Set(report.results.map((r) => r.category))];
   const markdown = `# CortexFlow Benchmark Results
