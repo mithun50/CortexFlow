@@ -1050,8 +1050,12 @@ async function handleRAGSearch(req, res) {
             query = url.searchParams.get('query') ?? '';
             projectId = url.searchParams.get('project_id') ?? undefined;
             searchType = url.searchParams.get('search_type') ?? undefined;
-            topK = url.searchParams.get('top_k') ? parseInt(url.searchParams.get('top_k'), 10) : undefined;
-            minScore = url.searchParams.get('min_score') ? parseFloat(url.searchParams.get('min_score')) : undefined;
+            topK = url.searchParams.get('top_k')
+                ? parseInt(url.searchParams.get('top_k'), 10)
+                : undefined;
+            minScore = url.searchParams.get('min_score')
+                ? parseFloat(url.searchParams.get('min_score'))
+                : undefined;
         }
         else {
             const body = await parseBody(req);

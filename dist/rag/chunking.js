@@ -276,7 +276,8 @@ export function mergeSmallChunks(chunks, minSize) {
             current = { ...chunk };
             continue;
         }
-        if (current.content.length < minSize && current.content.length + chunk.content.length < minSize * 3) {
+        if (current.content.length < minSize &&
+            current.content.length + chunk.content.length < minSize * 3) {
             // Merge chunks
             current = {
                 content: current.content + '\n\n' + chunk.content,

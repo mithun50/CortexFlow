@@ -238,7 +238,7 @@ export async function createRAGStorage() {
     // Check if FTS is available
     let ftsAvailable = false;
     try {
-        db.prepare("SELECT 1 FROM rag_chunks_fts LIMIT 1").get();
+        db.prepare('SELECT 1 FROM rag_chunks_fts LIMIT 1').get();
         ftsAvailable = true;
     }
     catch {
@@ -332,7 +332,9 @@ export async function createRAGStorage() {
                             chunk,
                             document: doc,
                             score: result.score,
-                            highlights: [chunk.content.substring(0, 200) + (chunk.content.length > 200 ? '...' : '')],
+                            highlights: [
+                                chunk.content.substring(0, 200) + (chunk.content.length > 200 ? '...' : ''),
+                            ],
                         });
                     }
                 }
@@ -401,7 +403,9 @@ export async function createRAGStorage() {
                             chunk,
                             document: doc,
                             score: 0.5, // Fixed score for keyword search
-                            highlights: [chunk.content.substring(0, 200) + (chunk.content.length > 200 ? '...' : '')],
+                            highlights: [
+                                chunk.content.substring(0, 200) + (chunk.content.length > 200 ? '...' : ''),
+                            ],
                         });
                     }
                 }

@@ -4,7 +4,7 @@
  * Exports all RAG functionality for use by other modules.
  */
 // Storage
-export { getRAGStorage, resetRAGStorage, cosineSimilarity, isSqliteAvailable } from './rag-storage.js';
+export { getRAGStorage, resetRAGStorage, cosineSimilarity, isSqliteAvailable, } from './rag-storage.js';
 // Embeddings
 export { getEmbeddingProvider, resetEmbeddingProvider, createEmbeddingProvider, getAvailableProviders, getProviderDimensions, } from './embeddings.js';
 // Chunking
