@@ -13,9 +13,9 @@
 [![GitHub forks](https://img.shields.io/github/forks/mithun50/CortexFlow?style=social)](https://github.com/mithun50/CortexFlow/fork)
 
 [![Benchmark](https://github.com/mithun50/CortexFlow/actions/workflows/benchmark.yml/badge.svg)](https://github.com/mithun50/CortexFlow/actions/workflows/benchmark.yml)
-[![Token Savings](https://img.shields.io/badge/token%20savings-40--60%25-brightgreen)](benchmarks/results/BENCHMARK.md)
-[![Compression](https://img.shields.io/badge/compression-2.5x-green)](benchmarks/results/BENCHMARK.md)
-[![Memory](https://img.shields.io/badge/memory-<150MB-green)](benchmarks/results/BENCHMARK.md)
+[![Token Savings](https://img.shields.io/badge/token%20savings-56%25-brightgreen)](benchmarks/results/BENCHMARK.md)
+[![Compression](https://img.shields.io/badge/compression-5.2x-green)](benchmarks/results/BENCHMARK.md)
+[![Memory](https://img.shields.io/badge/memory-121MB-green)](benchmarks/results/BENCHMARK.md)
 
 [![📖 Documentation](https://img.shields.io/badge/📖_Docs-Preview-2ea44f)](https://mithun50.github.io/CortexFlow/)
 
@@ -27,15 +27,16 @@
 <details>
 <summary><b>Performance Metrics</b> (click to expand)</summary>
 
-> _Results auto-updated by CI workflow_
+> _Auto-updated by CI_
 
 ### Summary
 
-| Metric                | Value        |
-| --------------------- | ------------ |
-| Avg Token Savings     | **56%**      |
-| Avg Compression Ratio | **5.2x**     |
-| Peak Memory           | **< 150 MB** |
+| Metric                | Value      |
+| --------------------- | ---------- |
+| Avg Token Savings     | **56%**    |
+| Avg Compression Ratio | **5.2x**   |
+| Peak Memory           | **121 MB** |
+| Avg Ops/Second        | **56.8K**  |
 
 [📈 View Full Benchmark Report](benchmarks/results/BENCHMARK.md)
 
@@ -183,6 +184,130 @@ Every time you switch between AI assistants, you lose context:
 | **AI Prompt Templates**     | Pre-built prompts for planning, debugging, review        | ✅ Available |
 | **Multi-AI Export**         | Export context for Claude, Gemini, ChatGPT, Cursor       | ✅ Available |
 | **Productivity Dashboard**  | Daily digest, streaks, productivity stats                | ✅ Available |
+| **RAG (Semantic Search)**   | Index documents, vector search, context retrieval        | ✅ Available |
+
+## RAG (Retrieval-Augmented Generation)
+
+CortexFlow includes a powerful RAG module for semantic search and document retrieval. Index project context or custom documents and retrieve relevant information using vector or keyword search.
+
+### RAG Features
+
+| Feature                     | Description                                             |
+| --------------------------- | ------------------------------------------------------- |
+| **Document Indexing**       | Index documents with automatic chunking                 |
+| **Vector Search**           | Semantic similarity search using embeddings             |
+| **Keyword Search**          | Full-text search using SQLite FTS5                      |
+| **Hybrid Search**           | Combined vector (70%) + keyword (30%) for best results  |
+| **Configurable Embeddings** | Local (transformers.js) or API (OpenAI, Voyage, Cohere) |
+| **Chunking Strategies**     | Paragraph, sentence, fixed-size, or semantic chunking   |
+| **Project Context RAG**     | Automatically index project tasks, notes, and decisions |
+
+### RAG MCP Tools
+
+| Tool                  | Description                                      |
+| --------------------- | ------------------------------------------------ |
+| `rag_index_document`  | Index a custom document with optional metadata   |
+| `rag_index_project`   | Index entire project context for semantic search |
+| `rag_search`          | Search with vector, keyword, or hybrid mode      |
+| `rag_query_context`   | Get formatted context for AI prompts             |
+| `rag_list_documents`  | List all indexed documents                       |
+| `rag_delete_document` | Remove a document from the index                 |
+| `rag_get_stats`       | Get RAG statistics (docs, chunks, config)        |
+| `rag_configure`       | Configure embedding provider and chunking        |
+
+### RAG HTTP Endpoints
+
+```bash
+# Index a document
+curl -X POST http://localhost:3210/api/rag/index-document \
+  -H "Content-Type: application/json" \
+  -d '{"title":"API Guide","content":"Your document content here..."}'
+
+# Index project context
+curl -X POST http://localhost:3210/api/rag/index-project
+
+# Search documents
+curl "http://localhost:3210/api/rag/search?query=authentication&type=hybrid&limit=5"
+
+# Get context for prompts
+curl "http://localhost:3210/api/rag/context?query=how%20to%20implement%20auth"
+
+# List indexed documents
+curl http://localhost:3210/api/rag/documents
+
+# Get RAG stats
+curl http://localhost:3210/api/rag/stats
+
+# Configure RAG
+curl -X PUT http://localhost:3210/api/rag/config \
+  -H "Content-Type: application/json" \
+  -d '{"embedding":{"provider":"openai"},"search":{"topK":10}}'
+```
+
+### Embedding Providers
+
+| Provider | Model                   | Dimensions | API Key Required |
+| -------- | ----------------------- | ---------- | ---------------- |
+| `local`  | Xenova/all-MiniLM-L6-v2 | 384        | No               |
+| `openai` | text-embedding-3-small  | 1536       | Yes              |
+| `voyage` | voyage-2                | 1024       | Yes              |
+| `cohere` | embed-english-v3.0      | 1024       | Yes              |
+| `custom` | Any endpoint            | Custom     | Depends          |
+
+### Chunking Strategies
+
+| Strategy    | Description                               | Best For             |
+| ----------- | ----------------------------------------- | -------------------- |
+| `paragraph` | Split on double newlines                  | General text         |
+| `sentence`  | Split on sentence boundaries              | Q&A, detailed search |
+| `fixed`     | Fixed character size with overlap         | Uniform chunks       |
+| `semantic`  | Split on markdown headers and code blocks | Technical docs       |
+
+### RAG Example Workflow
+
+```bash
+# 1. Start the server
+cortexflow --http
+
+# 2. Index your project documentation
+curl -X POST http://localhost:3210/api/rag/index-document \
+  -d '{"title":"Architecture","content":"# System Architecture\n\nOur API uses..."}'
+
+# 3. Index project context (tasks, notes, decisions)
+curl -X POST http://localhost:3210/api/rag/index-project
+
+# 4. Query for relevant context
+curl "http://localhost:3210/api/rag/context?query=authentication%20flow"
+
+# Response includes relevant chunks formatted for AI prompts
+```
+
+### RAG Configuration
+
+```json
+{
+  "embedding": {
+    "provider": "local",
+    "model": "Xenova/all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "batchSize": 10
+  },
+  "chunking": {
+    "strategy": "semantic",
+    "chunkSize": 500,
+    "chunkOverlap": 50,
+    "minChunkSize": 50,
+    "maxChunkSize": 2000
+  },
+  "search": {
+    "topK": 5,
+    "minScore": 0.5,
+    "hybridAlpha": 0.7
+  }
+}
+```
+
+> **Note:** RAG requires `better-sqlite3` native module. It will gracefully degrade on platforms without native module support.
 
 ## Alternatives & Comparison
 
@@ -198,7 +323,8 @@ CortexFlow isn't the only solution. Here's how it compares:
 | **Note Categories**  | ✅ 4 types         | ❌                                                                | ❌                                                                | ❌                                                                                 |
 | **Storage**          | JSON files         | JSON files                                                        | SQLite                                                            | SQLite                                                                             |
 | **Setup Complexity** | Simple             | Simple                                                            | Moderate                                                          | Moderate                                                                           |
-| **Primary Focus**    | Task handoff       | Doc handoff                                                       | Memory/RAG                                                        | Code context                                                                       |
+| **Primary Focus**    | Task handoff + RAG | Doc handoff                                                       | Memory/RAG                                                        | Code context                                                                       |
+| **RAG/Embeddings**   | ✅ Full RAG        | ❌                                                                | ✅ Memory focus                                                   | ❌                                                                                 |
 
 ### When to Use CortexFlow
 
@@ -207,12 +333,12 @@ CortexFlow isn't the only solution. Here's how it compares:
 - HTTP API for ChatGPT/web clients
 - Structured task management with priorities
 - Agent role tracking (who did what)
+- RAG with semantic and keyword search
+- Configurable embedding providers (local or API)
 - Simple JSON storage you can inspect
-- Minimal dependencies
 
 ❌ **Consider alternatives if you need:**
 
-- Semantic memory/RAG ([OpenMemory](https://mem0.ai/blog/introducing-openmemory-mcp))
 - Deep code understanding ([Context Sync](https://www.producthunt.com/products/context-sync-local-mcp-server))
 - Complex handoff documents ([mcp-handoff-server](https://github.com/dazeb/mcp-handoff-server))
 
@@ -754,11 +880,26 @@ interface AgentNote {
 ```
 cortexflow/
 ├── src/
-│   ├── models.ts       # Data types and schemas
-│   ├── storage.ts      # JSON file persistence
-│   ├── server.ts       # MCP server (stdio)
-│   ├── http-server.ts  # HTTP REST API
-│   └── index.ts        # Entry point
+│   ├── models.ts                # Data types and schemas
+│   ├── storage.ts               # JSON file persistence
+│   ├── server.ts                # MCP server (stdio)
+│   ├── http-server.ts           # HTTP REST API
+│   ├── intelligent-features.ts  # Smart queue, health score, compression
+│   ├── productivity-features.ts # Personal todos, time tracking, exports
+│   ├── index.ts                 # Entry point
+│   └── rag/                     # RAG module
+│       ├── rag-storage.ts       # SQLite vector storage
+│       ├── rag-features.ts      # High-level RAG operations
+│       ├── embeddings.ts        # Configurable embedding providers
+│       ├── chunking.ts          # Document chunking strategies
+│       └── index.ts             # RAG module exports
+├── tests/                       # Test files
+│   ├── rag.test.ts              # RAG tests
+│   ├── chunking.test.ts         # Chunking tests
+│   ├── embeddings.test.ts       # Embedding tests
+│   └── ...
+├── benchmarks/                  # Performance benchmarks
+│   └── index.ts                 # Benchmark suite
 ├── config/
 │   ├── claude-code/    # Claude Code config
 │   ├── claude-desktop/ # Claude Desktop config

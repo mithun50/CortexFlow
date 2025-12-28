@@ -57,12 +57,26 @@ import {
   getProductivityStats,
 } from './productivity-features.js';
 import {
+  indexDocument,
+  indexProjectContext,
+  search,
+  buildContextFromSearch,
+  deleteDocument as deleteRAGDocument,
+  listDocuments,
+  getRAGStats,
+  getRAGConfig,
+  updateRAGConfig,
+} from './rag/index.js';
+import { resetEmbeddingProvider } from './rag/embeddings.js';
+import {
   ProjectContext,
   Phase,
   TaskStatus,
   AgentRole,
   EventType,
   AuditAction,
+  EmbeddingProvider,
+  ChunkingStrategy,
   createProject,
   addTask,
   addNote,
@@ -1182,6 +1196,259 @@ Shows:
           type: 'string',
           enum: ['day', 'week', 'month'],
           description: 'Time period. Default: week',
+        },
+      },
+    },
+  },
+
+  // ============================================================================
+  // RAG (Retrieval-Augmented Generation) Tools
+  // ============================================================================
+  {
+    name: 'rag_index_document',
+    description: `Index a custom document for semantic search.
+
+Use this to add external documents, notes, or any text content to the RAG system.
+Documents are chunked and embedded for later retrieval.
+
+Returns the indexed document with chunk count.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          description: 'Document title for identification',
+        },
+        content: {
+          type: 'string',
+          description: 'Full text content to index',
+        },
+        project_id: {
+          type: 'string',
+          description: 'Associate with specific project (optional)',
+        },
+        metadata: {
+          type: 'object',
+          description: 'Additional metadata to store with document',
+        },
+      },
+      required: ['title', 'content'],
+    },
+  },
+  {
+    name: 'rag_index_project',
+    description: `Index an entire project context for semantic search.
+
+Indexes the project description, all tasks, and significant notes.
+Useful for making project knowledge searchable.
+
+Returns count of documents and chunks created.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project_id: {
+          type: 'string',
+          description: 'Project ID to index. Uses active project if omitted.',
+        },
+      },
+    },
+  },
+  {
+    name: 'rag_search',
+    description: `Search indexed documents using semantic, keyword, or hybrid search.
+
+Search types:
+- vector: Pure semantic search using embeddings
+- keyword: Full-text keyword search
+- hybrid: Combined vector + keyword (default, best results)
+
+Returns ranked results with relevance scores.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Search query text',
+        },
+        project_id: {
+          type: 'string',
+          description: 'Limit search to specific project (optional)',
+        },
+        search_type: {
+          type: 'string',
+          enum: ['vector', 'keyword', 'hybrid'],
+          description: 'Search method. Default: hybrid',
+        },
+        top_k: {
+          type: 'number',
+          description: 'Number of results to return. Default: 5',
+        },
+        min_score: {
+          type: 'number',
+          description: 'Minimum relevance score (0-1). Default: 0.3',
+        },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'rag_query_context',
+    description: `Get formatted context for prompts based on a query.
+
+Performs semantic search and formats results into a context string
+suitable for including in LLM prompts.
+
+Returns context string and source references.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Query to find relevant context for',
+        },
+        project_id: {
+          type: 'string',
+          description: 'Limit to specific project (optional)',
+        },
+        max_context_length: {
+          type: 'number',
+          description: 'Maximum context length in characters. Default: 4000',
+        },
+        include_metadata: {
+          type: 'boolean',
+          description: 'Include document metadata in context. Default: true',
+        },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'rag_list_documents',
+    description: `List all indexed documents.
+
+Shows document titles, source types, chunk counts, and project associations.
+Useful for understanding what content is available for search.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project_id: {
+          type: 'string',
+          description: 'Filter by project (optional)',
+        },
+        source_type: {
+          type: 'string',
+          enum: ['project_context', 'task', 'note', 'custom_document'],
+          description: 'Filter by source type (optional)',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum documents to return. Default: 50',
+        },
+      },
+    },
+  },
+  {
+    name: 'rag_delete_document',
+    description: `Delete an indexed document and its chunks.
+
+Removes the document from the search index.
+Use rag_list_documents to find document IDs.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        document_id: {
+          type: 'string',
+          description: 'Document ID to delete',
+        },
+      },
+      required: ['document_id'],
+    },
+  },
+  {
+    name: 'rag_get_stats',
+    description: `Get RAG system statistics.
+
+Shows:
+- Total documents and chunks
+- Indexed vs unindexed chunks
+- Documents per project
+- Embedding provider and dimensions`,
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'rag_configure',
+    description: `Configure RAG system settings.
+
+Configure embedding provider, chunking strategy, and search parameters.
+Changes take effect for new indexing operations.
+
+Embedding providers: local, openai, voyage, cohere, custom
+Chunking strategies: paragraph, sentence, fixed, semantic`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        embedding: {
+          type: 'object',
+          description: 'Embedding configuration',
+          properties: {
+            provider: {
+              type: 'string',
+              enum: ['local', 'openai', 'voyage', 'cohere', 'custom'],
+              description: 'Embedding provider',
+            },
+            model: {
+              type: 'string',
+              description: 'Model name (provider-specific)',
+            },
+            api_key: {
+              type: 'string',
+              description: 'API key for cloud providers',
+            },
+            api_endpoint: {
+              type: 'string',
+              description: 'Custom API endpoint URL',
+            },
+          },
+        },
+        chunking: {
+          type: 'object',
+          description: 'Chunking configuration',
+          properties: {
+            strategy: {
+              type: 'string',
+              enum: ['paragraph', 'sentence', 'fixed', 'semantic'],
+              description: 'Chunking strategy',
+            },
+            chunk_size: {
+              type: 'number',
+              description: 'Target chunk size in characters',
+            },
+            chunk_overlap: {
+              type: 'number',
+              description: 'Overlap between chunks',
+            },
+          },
+        },
+        search: {
+          type: 'object',
+          description: 'Search configuration',
+          properties: {
+            top_k: {
+              type: 'number',
+              description: 'Default number of results',
+            },
+            min_score: {
+              type: 'number',
+              description: 'Default minimum score',
+            },
+            hybrid_vector_weight: {
+              type: 'number',
+              description: 'Vector weight in hybrid search (0-1)',
+            },
+          },
         },
       },
     },
@@ -2529,6 +2796,272 @@ ${topTags}`);
 }
 
 // ============================================================================
+// RAG Tool Handlers
+// ============================================================================
+
+async function handleRAGIndexDocument(args: Record<string, unknown>): Promise<ToolResult> {
+  const title = args.title as string;
+  const content = args.content as string;
+  const projectId = args.project_id as string | undefined;
+  const metadata = args.metadata as Record<string, unknown> | undefined;
+
+  if (!title || !content) {
+    return error('Title and content are required');
+  }
+
+  const doc = await indexDocument(title, content, {
+    projectId,
+    sourceType: 'custom_document',
+    metadata,
+  });
+
+  return success(`📄 Document indexed successfully!
+
+ID: ${doc.id}
+Title: ${doc.title}
+Chunks: ${doc.chunkCount}
+Project: ${doc.projectId ?? 'none'}
+Created: ${doc.createdAt}`);
+}
+
+async function handleRAGIndexProject(args: Record<string, unknown>): Promise<ToolResult> {
+  const projectId = args.project_id as string | undefined;
+
+  const storage = await getStorage();
+  let project: ProjectContext | null;
+
+  if (projectId) {
+    project = await storage.loadProject(projectId);
+  } else {
+    project = await storage.getActiveProject();
+  }
+
+  if (!project) {
+    return error('No project found. Specify project_id or set an active project.');
+  }
+
+  const result = await indexProjectContext(project);
+
+  return success(`📚 Project indexed successfully!
+
+Project: ${project.name}
+Documents created: ${result.documents.length}
+Total chunks: ${result.totalChunks}
+
+Indexed:
+- 1 project context
+- ${project.tasks.length} tasks
+- ${result.documents.length - 1 - project.tasks.length} significant notes`);
+}
+
+async function handleRAGSearch(args: Record<string, unknown>): Promise<ToolResult> {
+  const query = args.query as string;
+  const projectId = args.project_id as string | undefined;
+  const searchType = args.search_type as 'vector' | 'keyword' | 'hybrid' | undefined;
+  const topK = args.top_k as number | undefined;
+  const minScore = args.min_score as number | undefined;
+
+  if (!query) {
+    return error('Query is required');
+  }
+
+  const result = await search(query, {
+    projectId,
+    searchType,
+    topK,
+    minScore,
+  });
+
+  if (result.results.length === 0) {
+    return success(`🔍 No results found for: "${query}"
+
+Try:
+- Different search terms
+- Lowering min_score threshold
+- Using keyword search for exact matches
+- Indexing more documents`);
+  }
+
+  const resultList = result.results
+    .map(
+      (r, i) =>
+        `${i + 1}. [${(r.score * 100).toFixed(1)}%] ${r.document.title}
+   ${r.chunk.content.substring(0, 150)}${r.chunk.content.length > 150 ? '...' : ''}`
+    )
+    .join('\n\n');
+
+  return success(`🔍 Search Results for: "${query}"
+
+Found: ${result.totalFound} results
+Search time: ${result.searchTimeMs}ms
+Embedding provider: ${result.embeddingProvider}
+
+${resultList}`);
+}
+
+async function handleRAGQueryContext(args: Record<string, unknown>): Promise<ToolResult> {
+  const query = args.query as string;
+  const projectId = args.project_id as string | undefined;
+  const maxContextLength = args.max_context_length as number | undefined;
+  const includeMetadata = args.include_metadata as boolean | undefined;
+
+  if (!query) {
+    return error('Query is required');
+  }
+
+  const result = await buildContextFromSearch(query, {
+    projectId,
+    maxContextLength,
+    includeMetadata,
+  });
+
+  if (result.sources.length === 0) {
+    return success(`📋 No relevant context found for: "${query}"
+
+Try indexing more documents or using different search terms.`);
+  }
+
+  const sourceList = result.sources
+    .map((s) => `- ${s.title} (${(s.score * 100).toFixed(1)}%)`)
+    .join('\n');
+
+  return success(`📋 Context for: "${query}"
+
+Sources (${result.sources.length}):
+${sourceList}
+
+--- CONTEXT START ---
+${result.context}
+--- CONTEXT END ---
+
+Search time: ${result.searchResult.searchTimeMs}ms
+Context length: ${result.context.length} characters`);
+}
+
+async function handleRAGListDocuments(args: Record<string, unknown>): Promise<ToolResult> {
+  const projectId = args.project_id as string | undefined;
+  const sourceType = args.source_type as string | undefined;
+  const limit = args.limit as number | undefined;
+
+  const docs = await listDocuments({
+    projectId,
+    sourceType,
+    limit: limit ?? 50,
+  });
+
+  if (docs.length === 0) {
+    return success(`📄 No documents indexed yet.
+
+Use rag_index_document or rag_index_project to add content.`);
+  }
+
+  const docList = docs
+    .map(
+      (d) =>
+        `- [${d.id.substring(0, 8)}] ${d.title}
+    Type: ${d.sourceType} | Chunks: ${d.chunkCount} | Project: ${d.projectId ?? 'none'}`
+    )
+    .join('\n');
+
+  return success(`📄 Indexed Documents (${docs.length})
+
+${docList}`);
+}
+
+async function handleRAGDeleteDocument(args: Record<string, unknown>): Promise<ToolResult> {
+  const documentId = args.document_id as string;
+
+  if (!documentId) {
+    return error('document_id is required');
+  }
+
+  const deleted = await deleteRAGDocument(documentId);
+
+  if (deleted) {
+    return success(`🗑️ Document deleted: ${documentId}`);
+  } else {
+    return error(`Document not found: ${documentId}`);
+  }
+}
+
+async function handleRAGGetStats(): Promise<ToolResult> {
+  const stats = await getRAGStats();
+
+  const projectBreakdown =
+    Object.entries(stats.projectBreakdown)
+      .map(([pid, count]) => `  ${pid}: ${count} documents`)
+      .join('\n') || '  (no project associations)';
+
+  return success(`📊 RAG System Statistics
+
+Documents: ${stats.totalDocuments}
+Chunks: ${stats.totalChunks}
+Indexed chunks: ${stats.indexedChunks} (${((stats.indexedChunks / Math.max(stats.totalChunks, 1)) * 100).toFixed(1)}%)
+
+Embedding Provider: ${stats.embeddingProvider}
+Embedding Dimensions: ${stats.embeddingDimensions}
+
+Documents by Project:
+${projectBreakdown}`);
+}
+
+async function handleRAGConfigure(args: Record<string, unknown>): Promise<ToolResult> {
+  const embeddingConfig = args.embedding as Record<string, unknown> | undefined;
+  const chunkingConfig = args.chunking as Record<string, unknown> | undefined;
+  const searchConfig = args.search as Record<string, unknown> | undefined;
+
+  const updates: Parameters<typeof updateRAGConfig>[0] = {};
+
+  if (embeddingConfig) {
+    updates.embedding = {
+      provider: embeddingConfig.provider as EmbeddingProvider | undefined,
+      model: embeddingConfig.model as string | undefined,
+      apiKey: embeddingConfig.api_key as string | undefined,
+      apiEndpoint: embeddingConfig.api_endpoint as string | undefined,
+    };
+    // Reset embedding provider to pick up new config
+    resetEmbeddingProvider();
+  }
+
+  if (chunkingConfig) {
+    updates.chunking = {
+      strategy: chunkingConfig.strategy as ChunkingStrategy | undefined,
+      chunkSize: chunkingConfig.chunk_size as number | undefined,
+      chunkOverlap: chunkingConfig.chunk_overlap as number | undefined,
+    };
+  }
+
+  if (searchConfig) {
+    updates.search = {
+      topK: searchConfig.top_k as number | undefined,
+      minScore: searchConfig.min_score as number | undefined,
+      hybridVectorWeight: searchConfig.hybrid_vector_weight as number | undefined,
+    };
+  }
+
+  await updateRAGConfig(updates);
+
+  const config = await getRAGConfig();
+
+  return success(`⚙️ RAG Configuration Updated
+
+Embedding:
+  Provider: ${config.embedding.provider}
+  Model: ${config.embedding.model}
+  Dimensions: ${config.embedding.dimensions}
+
+Chunking:
+  Strategy: ${config.chunking.strategy}
+  Chunk size: ${config.chunking.chunkSize}
+  Overlap: ${config.chunking.chunkOverlap}
+
+Search:
+  Top K: ${config.search.topK}
+  Min score: ${config.search.minScore}
+  Hybrid vector weight: ${config.search.hybridVectorWeight}`);
+}
+
+// ============================================================================
 // Server Setup
 // ============================================================================
 
@@ -2666,6 +3199,24 @@ export async function createServer(): Promise<Server> {
           return await handleGetDailyDigest(args ?? {});
         case 'get_productivity_stats':
           return await handleGetProductivityStats(args ?? {});
+
+        // RAG (Retrieval-Augmented Generation)
+        case 'rag_index_document':
+          return await handleRAGIndexDocument(args ?? {});
+        case 'rag_index_project':
+          return await handleRAGIndexProject(args ?? {});
+        case 'rag_search':
+          return await handleRAGSearch(args ?? {});
+        case 'rag_query_context':
+          return await handleRAGQueryContext(args ?? {});
+        case 'rag_list_documents':
+          return await handleRAGListDocuments(args ?? {});
+        case 'rag_delete_document':
+          return await handleRAGDeleteDocument(args ?? {});
+        case 'rag_get_stats':
+          return await handleRAGGetStats();
+        case 'rag_configure':
+          return await handleRAGConfigure(args ?? {});
 
         default:
           return error(`Unknown tool: ${name}`);

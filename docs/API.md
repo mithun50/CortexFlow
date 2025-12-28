@@ -775,3 +775,212 @@ curl -X POST http://localhost:3210/api/memory \
 # Recall later
 curl "http://localhost:3210/api/memory?key=code_style"
 ```
+
+---
+
+## RAG (Retrieval-Augmented Generation)
+
+CortexFlow includes a RAG module for semantic document search and context retrieval.
+
+### RAG MCP Tools
+
+#### rag_index_document
+
+Index a document for semantic search.
+
+**Parameters:**
+
+- `title` (required): Document title
+- `content` (required): Document content
+- `source_type` (optional): custom_document | project_task | project_note | project_decision
+- `project_id` (optional): Associate with project
+- `metadata` (optional): Additional metadata object
+- `skip_embedding` (optional): Skip embedding generation (for testing)
+
+**Returns:** Indexed document with ID and chunk count.
+
+---
+
+#### rag_index_project
+
+Index entire project context for semantic search.
+
+**Parameters:**
+
+- `project_id` (optional): Project ID. Defaults to active project.
+- `include_tasks` (optional): Include tasks. Default: true
+- `include_notes` (optional): Include notes. Default: true
+- `include_decisions` (optional): Include decisions. Default: true
+
+**Returns:** Array of indexed documents.
+
+---
+
+#### rag_search
+
+Search indexed documents.
+
+**Parameters:**
+
+- `query` (required): Search query
+- `search_type` (optional): vector | keyword | hybrid. Default: hybrid
+- `limit` (optional): Max results. Default: 5
+- `min_score` (optional): Minimum relevance score (0-1)
+- `project_id` (optional): Filter by project
+- `source_type` (optional): Filter by source type
+
+**Returns:** Search results with relevance scores.
+
+---
+
+#### rag_query_context
+
+Get formatted context for AI prompts.
+
+**Parameters:**
+
+- `query` (required): Search query
+- `search_type` (optional): vector | keyword | hybrid
+- `limit` (optional): Max chunks to include
+- `max_tokens` (optional): Maximum token budget
+
+**Returns:** Formatted context string and source references.
+
+---
+
+#### rag_list_documents
+
+List all indexed documents.
+
+**Parameters:**
+
+- `project_id` (optional): Filter by project
+- `source_type` (optional): Filter by source type
+- `limit` (optional): Max documents
+
+**Returns:** Array of document summaries.
+
+---
+
+#### rag_delete_document
+
+Delete a document from the index.
+
+**Parameters:**
+
+- `document_id` (required): Document ID to delete
+
+**Returns:** Success confirmation.
+
+---
+
+#### rag_get_stats
+
+Get RAG statistics.
+
+**Returns:** Document count, chunk count, embedding provider info, configuration.
+
+---
+
+#### rag_configure
+
+Configure RAG settings.
+
+**Parameters:**
+
+- `embedding` (optional): Embedding configuration
+  - `provider`: local | openai | voyage | cohere | custom
+  - `model`: Model name
+  - `dimensions`: Vector dimensions
+  - `batchSize`: Batch size for embedding
+  - `apiKey`: API key (for remote providers)
+  - `endpoint`: Custom endpoint URL
+- `chunking` (optional): Chunking configuration
+  - `strategy`: paragraph | sentence | fixed | semantic
+  - `chunkSize`: Target chunk size
+  - `chunkOverlap`: Overlap between chunks
+  - `minChunkSize`: Minimum chunk size
+  - `maxChunkSize`: Maximum chunk size
+- `search` (optional): Search configuration
+  - `topK`: Default result limit
+  - `minScore`: Default minimum score
+  - `hybridAlpha`: Vector weight in hybrid search (0-1)
+
+**Returns:** Updated configuration.
+
+---
+
+### RAG HTTP Endpoints
+
+| Method | Endpoint                  | Description           |
+| ------ | ------------------------- | --------------------- |
+| POST   | `/api/rag/index-document` | Index a document      |
+| POST   | `/api/rag/index-project`  | Index project context |
+| GET    | `/api/rag/search`         | Search documents      |
+| POST   | `/api/rag/search`         | Search (POST)         |
+| GET    | `/api/rag/context`        | Get formatted context |
+| POST   | `/api/rag/context`        | Get context (POST)    |
+| GET    | `/api/rag/documents`      | List documents        |
+| DELETE | `/api/rag/documents/:id`  | Delete document       |
+| GET    | `/api/rag/stats`          | Get RAG statistics    |
+| GET    | `/api/rag/config`         | Get configuration     |
+| PUT    | `/api/rag/config`         | Update configuration  |
+
+### RAG Example Workflow
+
+```bash
+# 1. Index documentation
+curl -X POST http://localhost:3210/api/rag/index-document \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Authentication Guide",
+    "content": "# Authentication\n\nUse JWT tokens for API authentication...",
+    "source_type": "custom_document",
+    "metadata": {"category": "security", "version": "1.0"}
+  }'
+
+# 2. Index project context
+curl -X POST http://localhost:3210/api/rag/index-project
+
+# 3. Search for relevant information
+curl "http://localhost:3210/api/rag/search?query=authentication&type=hybrid&limit=5"
+
+# 4. Get formatted context for prompts
+curl "http://localhost:3210/api/rag/context?query=how%20to%20implement%20authentication"
+
+# 5. View statistics
+curl http://localhost:3210/api/rag/stats
+
+# 6. Configure embedding provider
+curl -X PUT http://localhost:3210/api/rag/config \
+  -H "Content-Type: application/json" \
+  -d '{
+    "embedding": {
+      "provider": "openai",
+      "model": "text-embedding-3-small",
+      "apiKey": "sk-..."
+    },
+    "search": {"topK": 10, "hybridAlpha": 0.7}
+  }'
+```
+
+### Embedding Providers
+
+| Provider | Model                   | Dimensions | Requires API Key |
+| -------- | ----------------------- | ---------- | ---------------- |
+| local    | Xenova/all-MiniLM-L6-v2 | 384        | No               |
+| openai   | text-embedding-3-small  | 1536       | Yes              |
+| voyage   | voyage-2                | 1024       | Yes              |
+| cohere   | embed-english-v3.0      | 1024       | Yes              |
+| custom   | Any                     | Custom     | Depends          |
+
+### Chunking Strategies
+
+| Strategy  | Description                       | Use Case       |
+| --------- | --------------------------------- | -------------- |
+| paragraph | Split on double newlines          | General text   |
+| sentence  | Split on sentence boundaries      | Q&A, detailed  |
+| fixed     | Fixed character size with overlap | Uniform chunks |
+| semantic  | Split on headers and code blocks  | Technical docs |
+
+> **Note:** RAG requires `better-sqlite3` native module. Functions will throw errors on platforms without native module support.

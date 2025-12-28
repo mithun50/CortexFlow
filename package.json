@@ -42,7 +42,8 @@
     "bench:storage": "tsx benchmarks/index.ts --storage",
     "bench:intelligent": "tsx benchmarks/index.ts --intelligent",
     "bench:http": "tsx benchmarks/index.ts --http",
-    "bench:ci": "tsx benchmarks/index.ts --storage --intelligent --tokens --handoff --memory"
+    "bench:rag": "tsx benchmarks/index.ts --rag",
+    "bench:ci": "tsx benchmarks/index.ts --storage --intelligent --tokens --handoff --memory --rag"
   },
   "keywords": [
     "mcp",
@@ -58,7 +59,11 @@
     "context-sharing",
     "task-management",
     "ai-collaboration",
-    "ai-agents"
+    "ai-agents",
+    "rag",
+    "retrieval-augmented-generation",
+    "semantic-search",
+    "vector-search"
   ],
   "author": {
     "name": "Mithun Gowda B",
@@ -71,9 +76,14 @@
     "url": "https://github.com/sponsors/mithun50"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "better-sqlite3": "^11.6.0"
+  },
+  "optionalDependencies": {
+    "@xenova/transformers": "^2.17.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
     "@eslint/js": "^9.0.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.10.0",

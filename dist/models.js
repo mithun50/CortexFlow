@@ -715,4 +715,63 @@ export function filterAuditLog(entries, options) {
     }
     return filtered;
 }
+// ============================================================================
+// RAG Factory Functions
+// ============================================================================
+export function createRAGDocument(title, content, options = {}) {
+    const now = new Date().toISOString();
+    return {
+        id: randomUUID().slice(0, 8),
+        projectId: options.projectId ?? null,
+        sourceType: options.sourceType ?? 'custom_document',
+        sourceId: options.sourceId ?? null,
+        title,
+        content,
+        metadata: options.metadata ?? {},
+        chunkCount: options.chunkCount ?? 0,
+        createdAt: now,
+        updatedAt: now,
+    };
+}
+export function createRAGChunk(documentId, content, chunkIndex, options = {}) {
+    return {
+        id: randomUUID().slice(0, 8),
+        documentId,
+        content,
+        embedding: options.embedding ?? null,
+        chunkIndex,
+        startOffset: options.startOffset ?? 0,
+        endOffset: options.endOffset ?? content.length,
+        metadata: options.metadata ?? {},
+        createdAt: new Date().toISOString(),
+    };
+}
+export function getDefaultRAGConfig() {
+    return {
+        embedding: {
+            provider: 'local',
+            model: 'Xenova/all-MiniLM-L6-v2',
+            dimensions: 384,
+            batchSize: 32,
+        },
+        chunking: {
+            strategy: 'paragraph',
+            chunkSize: 512,
+            chunkOverlap: 50,
+            minChunkSize: 100,
+            maxChunkSize: 2000,
+        },
+        search: {
+            topK: 10,
+            minScore: 0.5,
+            rerank: false,
+            hybridVectorWeight: 0.7,
+        },
+        indexing: {
+            autoIndex: true,
+            indexOnCreate: true,
+            batchSize: 100,
+        },
+    };
+}
 //# sourceMappingURL=models.js.map

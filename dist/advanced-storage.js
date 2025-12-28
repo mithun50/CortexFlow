@@ -7,6 +7,7 @@
 import { readFile, writeFile, readdir, rm, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { BUILT_IN_TEMPLATES, createWebhookEvent, } from './models.js';
+import { getRAGStorage } from './rag/rag-storage.js';
 // ============================================================================
 // Storage Paths
 // ============================================================================
@@ -324,6 +325,7 @@ export async function getAdvancedStorage() {
             templates: await createTemplateStorage(),
             audit: await createAuditStorage(),
             events: await createEventDispatcher(),
+            rag: await getRAGStorage(),
         };
     }
     return advancedStorageInstance;

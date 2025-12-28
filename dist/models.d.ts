@@ -214,4 +214,97 @@ export declare function filterAuditLog(entries: AuditEntry[], options: {
     until?: string;
     limit?: number;
 }): AuditEntry[];
+export type RAGSourceType = 'project_context' | 'task' | 'note' | 'custom_document';
+export type EmbeddingProvider = 'local' | 'openai' | 'voyage' | 'cohere' | 'custom';
+export type ChunkingStrategy = 'fixed' | 'sentence' | 'paragraph' | 'semantic';
+export type RAGSearchType = 'vector' | 'keyword' | 'hybrid';
+export interface RAGDocument {
+    id: string;
+    projectId: string | null;
+    sourceType: RAGSourceType;
+    sourceId: string | null;
+    title: string;
+    content: string;
+    metadata: Record<string, unknown>;
+    chunkCount: number;
+    createdAt: string;
+    updatedAt: string;
+}
+export interface RAGChunk {
+    id: string;
+    documentId: string;
+    content: string;
+    embedding: number[] | null;
+    chunkIndex: number;
+    startOffset: number;
+    endOffset: number;
+    metadata: Record<string, unknown>;
+    createdAt: string;
+}
+export interface RAGSearchResult {
+    chunk: RAGChunk;
+    document: RAGDocument;
+    score: number;
+    highlights: string[];
+}
+export interface RAGQueryResult {
+    query: string;
+    results: RAGSearchResult[];
+    totalFound: number;
+    searchTimeMs: number;
+    embeddingProvider: string;
+}
+export interface EmbeddingConfig {
+    provider: EmbeddingProvider;
+    model: string;
+    dimensions: number;
+    apiKey?: string;
+    apiEndpoint?: string;
+    batchSize: number;
+}
+export interface ChunkingConfig {
+    strategy: ChunkingStrategy;
+    chunkSize: number;
+    chunkOverlap: number;
+    minChunkSize: number;
+    maxChunkSize: number;
+}
+export interface RAGSearchConfig {
+    topK: number;
+    minScore: number;
+    rerank: boolean;
+    hybridVectorWeight: number;
+}
+export interface RAGIndexingConfig {
+    autoIndex: boolean;
+    indexOnCreate: boolean;
+    batchSize: number;
+}
+export interface RAGConfig {
+    embedding: EmbeddingConfig;
+    chunking: ChunkingConfig;
+    search: RAGSearchConfig;
+    indexing: RAGIndexingConfig;
+}
+export interface RAGStats {
+    totalDocuments: number;
+    totalChunks: number;
+    indexedChunks: number;
+    projectBreakdown: Record<string, number>;
+    embeddingProvider: string;
+    embeddingDimensions: number;
+}
+/**
+ * Deep partial type for RAG configuration updates.
+ * Allows partial updates to nested configuration objects.
+ */
+export interface RAGConfigUpdate {
+    embedding?: Partial<EmbeddingConfig>;
+    chunking?: Partial<ChunkingConfig>;
+    search?: Partial<RAGSearchConfig>;
+    indexing?: Partial<RAGIndexingConfig>;
+}
+export declare function createRAGDocument(title: string, content: string, options?: Partial<Omit<RAGDocument, 'id' | 'title' | 'content' | 'createdAt' | 'updatedAt'>>): RAGDocument;
+export declare function createRAGChunk(documentId: string, content: string, chunkIndex: number, options?: Partial<Omit<RAGChunk, 'id' | 'documentId' | 'content' | 'chunkIndex' | 'createdAt'>>): RAGChunk;
+export declare function getDefaultRAGConfig(): RAGConfig;
 //# sourceMappingURL=models.d.ts.map

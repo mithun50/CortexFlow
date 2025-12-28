@@ -17,6 +17,7 @@ import {
   BUILT_IN_TEMPLATES,
   createWebhookEvent,
 } from './models.js';
+import { RAGStorage, getRAGStorage } from './rag/rag-storage.js';
 
 // ============================================================================
 // Storage Paths
@@ -428,6 +429,7 @@ export interface AdvancedStorage {
   templates: TemplateStorage;
   audit: AuditStorage;
   events: EventDispatcher;
+  rag: RAGStorage;
 }
 
 let advancedStorageInstance: AdvancedStorage | null = null;
@@ -440,6 +442,7 @@ export async function getAdvancedStorage(): Promise<AdvancedStorage> {
       templates: await createTemplateStorage(),
       audit: await createAuditStorage(),
       events: await createEventDispatcher(),
+      rag: await getRAGStorage(),
     };
   }
   return advancedStorageInstance;
