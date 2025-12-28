@@ -28,6 +28,7 @@
 <summary><b>Performance Metrics</b> (click to expand)</summary>
 
 > _Auto-updated by CI_
+> _Last updated: 2025-12-28_
 
 ### Summary
 
@@ -38,7 +39,7 @@
 | Peak Memory           | **121 MB** |
 | Avg Ops/Second        | **56.8K**  |
 
-[📈 View Full Benchmark Report](benchmarks/results/BENCHMARK.md)
+[View Full Benchmark Report](benchmarks/results/BENCHMARK.md)
 
 </details>
 <!-- BENCHMARK_RESULTS_END -->
