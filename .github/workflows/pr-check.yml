@@ -3,6 +3,11 @@ name: PR Check
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  pull-requests: read
 
 jobs:
   pr-validation:
