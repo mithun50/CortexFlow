@@ -39,20 +39,6 @@ jobs:
           name: benchmark-results
           path: benchmarks/results/
 
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        with:
-          name: CortexFlow Benchmarks
-          tool: 'customSmallerIsBetter'
-          output-file-path: benchmarks/results/benchmark-action.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
-          alert-threshold: '150%'
-          comment-on-alert: true
-          fail-on-alert: false
-          benchmark-data-dir-path: 'benchmarks/data'
-
       - name: Update README with benchmark results
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: |
@@ -104,7 +90,7 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git
-          git add benchmarks/results/ benchmarks/data/ README.md
+          git add benchmarks/results/ README.md
           git diff --staged --quiet || git commit -m "ci: update benchmark results [skip ci]"
           git push
 
