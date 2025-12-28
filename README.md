@@ -13,9 +13,9 @@
 [![GitHub forks](https://img.shields.io/github/forks/mithun50/CortexFlow?style=social)](https://github.com/mithun50/CortexFlow/fork)
 
 [![Benchmark](https://github.com/mithun50/CortexFlow/actions/workflows/benchmark.yml/badge.svg)](https://github.com/mithun50/CortexFlow/actions/workflows/benchmark.yml)
-[![Token Savings](https://img.shields.io/badge/token%20savings-40--60%25-brightgreen)](benchmarks/results/BENCHMARK.md)
-[![Compression](https://img.shields.io/badge/compression-2.5x-green)](benchmarks/results/BENCHMARK.md)
-[![Memory](https://img.shields.io/badge/memory-<150MB-green)](benchmarks/results/BENCHMARK.md)
+[![Token Savings](https://img.shields.io/badge/token%20savings-56%25-brightgreen)](benchmarks/results/BENCHMARK.md)
+[![Compression](https://img.shields.io/badge/compression-5.2x-green)](benchmarks/results/BENCHMARK.md)
+[![Memory](https://img.shields.io/badge/memory-116MB-green)](benchmarks/results/BENCHMARK.md)
 
 [![📖 Documentation](https://img.shields.io/badge/📖_Docs-Preview-2ea44f)](https://mithun50.github.io/CortexFlow/)
 
@@ -27,17 +27,18 @@
 <details>
 <summary><b>Performance Metrics</b> (click to expand)</summary>
 
-> _Results auto-updated by CI workflow_
+> _Last updated: 2025-12-28_
 
 ### Summary
 
-| Metric                | Value        |
-| --------------------- | ------------ |
-| Avg Token Savings     | **56%**      |
-| Avg Compression Ratio | **5.2x**     |
-| Peak Memory           | **< 150 MB** |
+| Metric                | Value      |
+| --------------------- | ---------- |
+| Avg Token Savings     | **56%**    |
+| Avg Compression Ratio | **5.2x**   |
+| Peak Memory           | **116 MB** |
+| Avg Ops/Second        | **95.4K**  |
 
-[📈 View Full Benchmark Report](benchmarks/results/BENCHMARK.md)
+[View Full Benchmark Report](benchmarks/results/BENCHMARK.md)
 
 </details>
 <!-- BENCHMARK_RESULTS_END -->

@@ -1,0 +1,127 @@
+[
+  {
+    "name": "Create Project",
+    "unit": "ms",
+    "value": 0.2875606100000016
+  },
+  {
+    "name": "Read Project",
+    "unit": "ms",
+    "value": 0.2262875949999994
+  },
+  {
+    "name": "List Projects",
+    "unit": "ms",
+    "value": 85.7915659219998
+  },
+  {
+    "name": "Update Project",
+    "unit": "ms",
+    "value": 0.5659329740000248
+  },
+  {
+    "name": "Read Large Project (200 tasks)",
+    "unit": "ms",
+    "value": 0.7175083660001692
+  },
+  {
+    "name": "Critical Path Analysis",
+    "unit": "ms",
+    "value": 0.21665341999998783
+  },
+  {
+    "name": "Smart Priority Queue",
+    "unit": "ms",
+    "value": 0.2243373000001011
+  },
+  {
+    "name": "Context Compression",
+    "unit": "ms",
+    "value": 0.006615734000282827
+  },
+  {
+    "name": "Health Score Calculation",
+    "unit": "ms",
+    "value": 0.06811206199997105
+  },
+  {
+    "name": "Generate Suggestions",
+    "unit": "ms",
+    "value": 0.25331324400022276
+  },
+  {
+    "name": "Compress Small Project",
+    "unit": "ms",
+    "value": 0.0013369349999993573
+  },
+  {
+    "name": "Compress Medium Project",
+    "unit": "ms",
+    "value": 0.0033444250002503395
+  },
+  {
+    "name": "Compress Large Project",
+    "unit": "ms",
+    "value": 0.009308840000339842
+  },
+  {
+    "name": "Compress XLarge Project",
+    "unit": "ms",
+    "value": 0.01813877499946102
+  },
+  {
+    "name": "Export Small (minimal)",
+    "unit": "ms",
+    "value": 0.0036706750000666945
+  },
+  {
+    "name": "Export Small (standard)",
+    "unit": "ms",
+    "value": 0.015930530000041472
+  },
+  {
+    "name": "Export Small (detailed)",
+    "unit": "ms",
+    "value": 0.042380775000201536
+  },
+  {
+    "name": "Export Medium (minimal)",
+    "unit": "ms",
+    "value": 0.004477160000315053
+  },
+  {
+    "name": "Export Medium (standard)",
+    "unit": "ms",
+    "value": 0.027111469999836116
+  },
+  {
+    "name": "Export Medium (detailed)",
+    "unit": "ms",
+    "value": 0.05535100999990391
+  },
+  {
+    "name": "Export Large (minimal)",
+    "unit": "ms",
+    "value": 0.00760677000045689
+  },
+  {
+    "name": "Export Large (standard)",
+    "unit": "ms",
+    "value": 0.049866580000198155
+  },
+  {
+    "name": "Export Large (detailed)",
+    "unit": "ms",
+    "value": 0.197583654999944
+  },
+  {
+    "name": "Token Savings",
+    "unit": "%",
+    "value": 43.75037265023063
+  },
+  {
+    "name": "Memory Usage",
+    "unit": "MB",
+    "value": 116.40625
+  }
+]
