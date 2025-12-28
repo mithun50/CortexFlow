@@ -942,7 +942,7 @@ Previous tracking is automatically stopped.`,
                 },
                 notes: {
                     type: 'string',
-                    description: 'Notes about what you\'re working on',
+                    description: "Notes about what you're working on",
                 },
             },
             required: ['task_id', 'project_id'],
@@ -1968,12 +1968,18 @@ async function handleListMemories(args) {
     }
     const categoryIcon = (c) => {
         switch (c) {
-            case 'preference': return '⚙️';
-            case 'decision': return '🎯';
-            case 'context': return '📌';
-            case 'learning': return '💡';
-            case 'reminder': return '⏰';
-            default: return '📝';
+            case 'preference':
+                return '⚙️';
+            case 'decision':
+                return '🎯';
+            case 'context':
+                return '📌';
+            case 'learning':
+                return '💡';
+            case 'reminder':
+                return '⏰';
+            default:
+                return '📝';
         }
     };
     const list = memories
@@ -2113,9 +2119,7 @@ async function handleGetDailyDigest(args) {
     const deadlines = digest.upcomingDeadlines
         .map((t) => `  📅 ${t.dueDate?.split('T')[0]}: ${t.content}`)
         .join('\n') || '  (none)';
-    const completions = digest.recentCompletions
-        .map((d) => `  ✓ ${d.content}`)
-        .join('\n') || '  (none today)';
+    const completions = digest.recentCompletions.map((d) => `  ✓ ${d.content}`).join('\n') || '  (none today)';
     return success(`📊 Daily Digest - ${digest.date}
 
 📋 Todos: ${digest.todosCount} pending
@@ -2137,9 +2141,7 @@ ${digest.memories.map((m) => `  • ${m.value}`).join('\n') || '  (none)'}`);
 async function handleGetProductivityStats(args) {
     const period = args.period ?? 'week';
     const stats = await getProductivityStats(period);
-    const topTags = stats.topTags
-        .map((t) => `  ${t.tag}: ${t.count}`)
-        .join('\n') || '  (no tags)';
+    const topTags = stats.topTags.map((t) => `  ${t.tag}: ${t.count}`).join('\n') || '  (no tags)';
     return success(`📈 Productivity Stats (${period})
 
 ✅ Tasks Completed: ${stats.tasksCompleted}
